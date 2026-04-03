@@ -216,6 +216,7 @@ namespace NikkeViewerEX.Core
             BackgroundMusicAudio.clip = !string.IsNullOrEmpty(NikkeSettings.BackgroundMusic)
                 ? await WebRequestHelper.GetAudioClip(NikkeSettings.BackgroundMusic)
                 : null;
+            BackgroundMusicAudio.loop = true;
 
             BackgroundMusicVolumeSlider.value = BackgroundMusicAudio.volume =
                 NikkeSettings.BackgroundMusicVolume;
