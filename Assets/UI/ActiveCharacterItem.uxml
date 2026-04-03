@@ -1,0 +1,34 @@
+<UXML xmlns="UnityEngine.UIElements">
+    <VisualElement class="active-item" name="active-item">
+
+        <!-- Main row: info + remove button -->
+        <VisualElement class="active-item-main">
+            <VisualElement class="character-info">
+                <Label class="character-name" name="character-name" text="Character Name" />
+                <VisualElement class="character-meta">
+                    <Label class="character-id" name="character-id" text="c000" />
+                    <Label class="character-version" name="character-version" text="4.0" />
+                </VisualElement>
+                <VisualElement class="pose-buttons" name="pose-buttons" />
+            </VisualElement>
+            <Button class="remove-button" name="remove-button" text="Remove" />
+        </VisualElement>
+
+        <!-- Controls row: scale slider + hide name toggle + lock toggle -->
+        <VisualElement class="active-item-controls">
+            <Label class="active-control-label" text="Scale" />
+            <Slider class="active-scale-slider" name="active-scale-slider"
+                low-value="0.2" high-value="5" value="1" />
+            <Label class="active-scale-value" name="active-scale-value" text="1.0x" />
+            <VisualElement class="active-hide-name-toggle" name="active-hide-name-toggle">
+                <Label class="toggle-label" text="Show name" />
+                <Toggle class="toggle-checkbox" name="toggle-checkbox" />
+            </VisualElement>
+            <VisualElement class="active-lock-toggle" name="active-lock-toggle">
+                <Label class="toggle-label" text="Lock" />
+                <Toggle class="toggle-checkbox" name="lock-checkbox" />
+            </VisualElement>
+        </VisualElement>
+
+    </VisualElement>
+</UXML>

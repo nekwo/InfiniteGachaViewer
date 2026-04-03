@@ -1,0 +1,297 @@
+<UXML xmlns="UnityEngine.UIElements">
+    <Style src="NikkeBrowser.uss" />
+
+    <VisualElement class="browser-root" name="browser-root">
+        <!-- Hover zone at top of screen -->
+        <VisualElement class="hover-zone" name="hover-zone">
+            <Toggle class="hide-ui-toggle" name="hide-ui-toggle" text="Hide UI" />
+        </VisualElement>
+        
+        <VisualElement class="browser-panel" name="browser-panel">
+
+            <!-- Header -->
+            <VisualElement class="header" name="header">
+                <VisualElement style="flex-direction: row; align-items: center;">
+                    <Label class="header-title" text="Infinite Browser" />
+                    <Label class="header-subtitle" text="Character Manager" />
+                </VisualElement>
+            </VisualElement>
+
+            <!-- Tab Bar -->
+            <VisualElement class="tab-bar" name="tab-bar">
+                <Button class="tab-button tab-active" name="tab-config" text="Configuration" />
+                <Button class="tab-button" name="tab-browser" text="Characters" />
+                <Button class="tab-button" name="tab-active" text="Active" />
+                <Button class="tab-button" name="tab-debug" text="Debug" />
+                <Button class="tab-button" name="tab-presets" text="Presets" />
+                <Button class="tab-button" name="tab-backgrounds" text="Backgrounds" />
+                <Button class="tab-button" name="tab-music" text="Music" />
+            </VisualElement>
+
+            <!-- Content Area -->
+            <VisualElement class="content-area">
+
+                <!-- Tab 1: Configuration -->
+                <VisualElement class="tab-content tab-visible" name="content-config">
+                    <VisualElement class="config-section">
+                        <Label class="config-description"
+                            text="Set the path to your character database JSON file and the root folder containing character assets. Each character folder should be named by its ID and contain .skel, .atlas, and .png files." />
+
+                        <!-- JSON Path -->
+                        <VisualElement class="field-group">
+                            <Label class="field-label" text="Nikke Character Database (JSON)" />
+                            <VisualElement class="field-row">
+                                <TextField class="field-input" name="json-path-input"
+                                    placeholder="Path to characters.json..." />
+                                <Button class="browse-button" name="browse-json" text="Browse" />
+                            </VisualElement>
+                        </VisualElement>
+
+                        <!-- Assets Folder -->
+                        <VisualElement class="field-group">
+                            <Label class="field-label" text="Nikke Assets Folder" />
+                            <VisualElement class="field-row">
+                                <TextField class="field-input" name="assets-folder-input"
+                                    placeholder="Root folder containing character folders..." />
+                                <Button class="browse-button" name="browse-assets" text="Browse" />
+                            </VisualElement>
+                        </VisualElement>
+
+                        <!-- Thumbnails Folder -->
+                        <VisualElement class="field-group">
+                            <Label class="field-label" text="Nikke Thumbnails Folder (Optional)" />
+                            <VisualElement class="field-row">
+                                <TextField class="field-input" name="thumbnails-folder-input"
+                                    placeholder="Folder containing si_*.png thumbnails..." />
+                                <Button class="browse-button" name="browse-thumbnails" text="Browse" />
+                            </VisualElement>
+                        </VisualElement>
+
+                        <!-- Backgrounds Folder -->
+                        <VisualElement class="field-group">
+                            <Label class="field-label" text="Backgrounds Folder (Optional)" />
+                            <VisualElement class="field-row">
+                                <TextField class="field-input" name="backgrounds-folder-input"
+                                    placeholder="Folder containing background images..." />
+                                <Button class="browse-button" name="browse-backgrounds" text="Browse" />
+                            </VisualElement>
+                        </VisualElement>
+
+                        <!-- Background Music -->
+                        <VisualElement class="field-group">
+                            <Label class="field-label" text="Background Music (Optional)" />
+                            <VisualElement class="field-row">
+                                <TextField class="field-input" name="bgm-path-input"
+                                    placeholder="Path to audio file..." />
+                                <Button class="browse-button" name="browse-bgm" text="Browse" />
+                            </VisualElement>
+                        </VisualElement>
+
+                        <!-- Azur Lane Database -->
+                        <VisualElement class="field-group">
+                            <Label class="field-label" text="Azur Lane Database (JSON)" />
+                            <VisualElement class="field-row">
+                                <TextField class="field-input" name="al-json-path-input"
+                                    placeholder="Path to l2d.json..." />
+                                <Button class="browse-button" name="browse-al-json" text="Browse" />
+                            </VisualElement>
+                        </VisualElement>
+
+                        <!-- Azur Lane Assets Folder -->
+                        <VisualElement class="field-group">
+                            <Label class="field-label" text="Azur Lane Assets Folder" />
+                            <VisualElement class="field-row">
+                                <TextField class="field-input" name="al-assets-folder-input"
+                                    placeholder="Root folder containing Live2D character folders..." />
+                                <Button class="browse-button" name="browse-al-assets" text="Browse" />
+                            </VisualElement>
+                        </VisualElement>
+
+                        <!-- Load Button -->
+                        <Button class="load-button" name="load-button" text="Load Database" />
+
+                        <!-- Status -->
+                        <Label class="status-text" name="status-text" text="" />
+                    </VisualElement>
+                </VisualElement>
+
+                <!-- Tab 2: Character Browser -->
+                <VisualElement class="tab-content tab-content--browser" name="content-browser">
+
+                    <!-- Game sub-tab bar -->
+                    <VisualElement class="sub-tab-bar">
+                        <Button class="sub-tab-button sub-tab-active" name="sub-tab-nikke" text="Nikke" />
+                        <Button class="sub-tab-button" name="sub-tab-azurlane" text="Azur Lane" />
+                    </VisualElement>
+
+                    <!-- Nikke sub-content -->
+                    <VisualElement class="sub-tab-content sub-tab-visible" name="sub-content-nikke">
+                        <!-- Search -->
+                        <VisualElement class="search-bar">
+                            <TextField class="search-input" name="search-input"
+                                placeholder="Search characters by name or ID..." />
+                        </VisualElement>
+
+                        <!-- Filters -->
+                        <VisualElement class="filter-bar">
+                            <Label class="filter-label" text="Filters" />
+                            <Button class="filter-button" name="filter-has-assets" text="Has Assets" />
+                            <Button class="filter-button" name="filter-full" text="Full Characters" />
+                        </VisualElement>
+
+                        <!-- List header -->
+                        <VisualElement class="list-header">
+                            <Label class="list-count" name="browser-count" text="0 characters available" />
+                        </VisualElement>
+
+                        <!-- Character list -->
+                        <ScrollView class="character-list browser-grid" name="browser-list" />
+
+                        <!-- Empty state -->
+                        <VisualElement class="empty-state" name="browser-empty">
+                            <Label class="empty-state-text"
+                                text="No characters loaded.&#10;Go to Configuration tab to set up your database." />
+                        </VisualElement>
+                    </VisualElement>
+
+                    <!-- Azur Lane sub-content -->
+                    <VisualElement class="sub-tab-content" name="sub-content-azurlane">
+                        <!-- Search -->
+                        <VisualElement class="search-bar">
+                            <TextField class="search-input" name="al-search-input"
+                                placeholder="Search Azur Lane characters..." />
+                        </VisualElement>
+
+                        <!-- List header -->
+                        <VisualElement class="list-header">
+                            <Label class="list-count" name="al-browser-count" text="0 characters available" />
+                        </VisualElement>
+
+                        <!-- Character list -->
+                        <ScrollView class="character-list browser-grid" name="al-browser-list" />
+
+                        <!-- Empty state -->
+                        <VisualElement class="empty-state" name="al-browser-empty">
+                            <Label class="empty-state-text"
+                                text="No Azur Lane characters loaded.&#10;Set an Azur Lane assets folder in Configuration." />
+                        </VisualElement>
+                    </VisualElement>
+
+                </VisualElement>
+
+                <!-- Tab 3: Active Characters -->
+                <VisualElement class="tab-content" name="content-active">
+
+                    <!-- Background Preview & Scale -->
+                    <VisualElement class="active-bg-section">
+                        <VisualElement class="active-bg-preview" name="active-bg-preview">
+                            <Label class="active-bg-empty-label" name="active-bg-empty-label" text="No background set" />
+                        </VisualElement>
+                        <VisualElement class="active-bg-controls">
+                            <Label class="field-label" text="Background Scale" />
+                            <VisualElement class="active-bg-slider-row">
+                                <Slider class="active-bg-slider" name="active-bg-slider"
+                                    low-value="0.5" high-value="3" value="1" />
+                                <Label class="active-bg-slider-value" name="active-bg-scale-value" text="1.0x" />
+                            </VisualElement>
+                            <Label class="field-label" style="margin-top: 8px;" text="Pan X" />
+                            <VisualElement class="active-bg-slider-row">
+                                <Slider class="active-bg-slider" name="active-bg-pan-x"
+                                    low-value="-1000" high-value="1000" value="0" />
+                                <Label class="active-bg-slider-value" name="active-bg-panx-value" text="0" />
+                            </VisualElement>
+                            <Label class="field-label" style="margin-top: 8px;" text="Pan Y" />
+                            <VisualElement class="active-bg-slider-row">
+                                <Slider class="active-bg-slider" name="active-bg-pan-y"
+                                    low-value="-1000" high-value="1000" value="0" />
+                                <Label class="active-bg-slider-value" name="active-bg-pany-value" text="0" />
+                            </VisualElement>
+                        </VisualElement>
+                    </VisualElement>
+
+                    <!-- Music Controls -->
+                    <VisualElement class="active-music-section">
+                        <Label class="active-music-icon">\u266B</Label>
+                        <Label class="active-music-name" name="active-music-name" text="No track selected" />
+                        <Button class="active-music-playpause" name="active-music-playpause" text="Play" />
+                        <Slider class="active-music-volume" name="active-music-volume"
+                            low-value="0" high-value="1" value="0.5" />
+                        <Label class="active-music-volume-value" name="active-music-volume-value" text="50%" />
+                    </VisualElement>
+
+                    <!-- List header -->
+                    <VisualElement class="list-header">
+                        <Label class="list-count" name="active-count" text="0 characters active" />
+                    </VisualElement>
+
+                    <!-- Active list -->
+                    <ScrollView class="character-list" name="active-list" />
+
+                    <!-- Empty state -->
+                    <VisualElement class="empty-state" name="active-empty">
+                        <Label class="empty-state-text"
+                            text="No active characters.\nBrowse the Characters tab to add some." />
+                    </VisualElement>
+                </VisualElement>
+
+                <!-- Tab 4: Debug -->
+                <VisualElement class="tab-content" name="content-debug">
+                    <VisualElement class="list-header">
+                        <Label class="list-count" name="debug-count" text="0 viewers active" />
+                    </VisualElement>
+                    <ScrollView class="character-list" name="debug-list" />
+                    <VisualElement class="empty-state" name="debug-empty">
+                        <Label class="empty-state-text"
+                            text="No active viewers to inspect." />
+                    </VisualElement>
+                </VisualElement>
+
+                <!-- Tab 5: Backgrounds -->
+                <VisualElement class="tab-content" name="content-backgrounds">
+                    <VisualElement class="list-header">
+                        <Label class="list-count" name="bg-count" text="0 backgrounds" />
+                        <Button class="bg-clear-button" name="bg-clear-button" text="Clear" />
+                    </VisualElement>
+                    <ScrollView class="character-list bg-grid" name="bg-list" />
+                    <VisualElement class="empty-state" name="bg-empty">
+                        <Label class="empty-state-text"
+                            text="No backgrounds found.&#10;Set a Backgrounds Folder in Configuration." />
+                    </VisualElement>
+                </VisualElement>
+
+                <!-- Tab 6: Music -->
+                <VisualElement class="tab-content" name="content-music">
+                    <VisualElement class="list-header">
+                        <Label class="list-count" name="music-count" text="0 tracks" />
+                        <Button class="bg-clear-button" name="music-clear-button" text="Clear" />
+                    </VisualElement>
+                    <ScrollView class="character-list" name="music-list" />
+                    <VisualElement class="empty-state" name="music-empty">
+                        <Label class="empty-state-text"
+                            text="No music found.&#10;Set a BGM Folder in Configuration." />
+                    </VisualElement>
+                </VisualElement>
+
+                <!-- Tab 7: Presets -->
+                <VisualElement class="tab-content" name="content-presets">
+                    <!-- Save row -->
+                    <VisualElement class="preset-save-row">
+                        <TextField class="field-input" name="preset-name-input"
+                            placeholder="Preset name..." />
+                        <Button class="preset-save-button" name="preset-save-button" text="Save Current" />
+                    </VisualElement>
+
+                    <!-- Preset list -->
+                    <ScrollView class="character-list" name="preset-list" />
+
+                    <!-- Empty state -->
+                    <VisualElement class="empty-state" name="preset-empty">
+                        <Label class="empty-state-text"
+                            text="No presets saved.&#10;Add characters then save the current set." />
+                    </VisualElement>
+                </VisualElement>
+
+            </VisualElement>
+        </VisualElement>
+    </VisualElement>
+</UXML>

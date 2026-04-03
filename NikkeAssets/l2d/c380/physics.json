@@ -1,0 +1,95 @@
+{
+    "Enabled": true,
+    "Bones": [
+        {
+            "BoneName": "@a_example_bone",
+            "Stiffness": 18.0,
+            "Damping": 2.0,
+            "ForceFactor": 5.0,
+            "MaxRotDisplacement": 20.0,
+            "PosStiffness": 60.0,
+            "PosDamping": 2.0,
+            "PosForceFactor": 1.0,
+            "MaxPosDisplacement": 3.0
+        }
+    ],
+    "AutoPatterns": [
+        {
+            "Keyword": "thigh",
+            "Stiffness": 18.0,
+            "Damping": 2.0,
+            "ForceFactor": 10.0,
+            "MaxRotDisplacement": 30.0,
+            "PosStiffness": 60.0,
+            "PosDamping": 2.0,
+            "PosForceFactor": 4.0,
+            "MaxPosDisplacement": 5.0
+        },
+        {
+            "Keyword": "hip",
+            "Stiffness": 20.0,
+            "Damping": 0.6,
+            "ForceFactor": 9.0,
+            "MaxRotDisplacement": 25.0,
+            "PosStiffness": 65.0,
+            "PosDamping": 1.0,
+            "PosForceFactor": 3.5,
+            "MaxPosDisplacement": 4.0
+        },
+        {
+            "Keyword": "skirt",
+            "Stiffness": 35.0,
+            "Damping": 4.5,
+            "ForceFactor": 5.0,
+            "MaxRotDisplacement": 8.0,
+            "PosStiffness": 190.0,
+            "PosDamping": 9.0,
+            "PosForceFactor": 1.5,
+            "MaxPosDisplacement": 1.0
+        },
+        {
+            "Keyword": "leg",
+            "Stiffness": 18.0,
+            "Damping": 2.0,
+            "ForceFactor": 10.0,
+            "MaxRotDisplacement": 30.0,
+            "PosStiffness": 60.0,
+            "PosDamping": 2.0,
+            "PosForceFactor": 4.0,
+            "MaxPosDisplacement": 5.0
+        },
+        {
+            "Keyword": "breast",
+            "Stiffness": 18.0,
+            "Damping": 2.0,
+            "ForceFactor": 1.0,
+            "MaxRotDisplacement": 10.0,
+            "PosStiffness": 60.0,
+            "PosDamping": 2.0,
+            "PosForceFactor": 1.0,
+            "MaxPosDisplacement": 3.0
+        },
+        {
+            "Keyword": "chest",
+            "Stiffness": 18.0,
+            "Damping": 2.0,
+            "ForceFactor": 1.0,
+            "MaxRotDisplacement": 10.0,
+            "PosStiffness": 60.0,
+            "PosDamping": 2.0,
+            "PosForceFactor": 1.0,
+            "MaxPosDisplacement": 3.0
+        },
+        {
+            "Keyword": "hair",
+            "Stiffness": 18.0,
+            "Damping": 2.0,
+            "ForceFactor": 5.0,
+            "MaxRotDisplacement": 40.0,
+            "PosStiffness": 60.0,
+            "PosDamping": 2.0,
+            "PosForceFactor": 1.0,
+            "MaxPosDisplacement": 1.0
+        }
+    ]
+}

@@ -1,0 +1,22 @@
+<UXML xmlns="UnityEngine.UIElements">
+    <VisualElement class="character-item character-card" name="character-item">
+        <!-- Thumbnail (top) -->
+        <VisualElement class="character-thumbnail" name="character-thumbnail" />
+
+        <!-- Info -->
+        <VisualElement class="character-info">
+            <Label class="character-name" name="character-name" text="Character Name" />
+            <VisualElement class="character-meta">
+                <Label class="character-id" name="character-id" text="c000" />
+                <Label class="character-version" name="character-version" text="4.0" />
+                <Label class="character-no-assets" name="no-assets-label" text="" />
+            </VisualElement>
+        </VisualElement>
+
+        <!-- Actions -->
+        <VisualElement class="character-action-col">
+            <Button class="add-button" name="add-button" text="Add" />
+            <Label class="added-label" name="added-label" text="" />
+        </VisualElement>
+    </VisualElement>
+</UXML>

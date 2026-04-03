@@ -1,0 +1,84 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &5561955493356933093
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 6000150080598430397}
+  - component: {fileID: 336858418632136741}
+  - component: {fileID: 1442561797641865502}
+  m_Layer: 0
+  m_Name: MainControl
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &6000150080598430397
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5561955493356933093}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &336858418632136741
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5561955493356933093}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f56e34a96ec69744ca42a16763898aa3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_NikkeVersions:
+    SerializedEntries:
+    - Key: 4.0
+      Value: {fileID: 2469462230388048767, guid: 78419fcecd7fb1e40b6089e051da51df, type: 3}
+    - Key: 4.1
+      Value: {fileID: 4875687364164016299, guid: 56bf43eb4d1905347894f1fb15aade8f, type: 3}
+  m_AzurLaneViewerPrefab: {fileID: 6588088666038670747, guid: a81d4554e4ba17045b354e8fae9a6b3d, type: 3}
+  m_MainControlUI: {fileID: 0}
+  m_WelcomePanel: {fileID: 0}
+  m_NikkeListContent: {fileID: 0}
+  m_NikkeListItem: {fileID: 82546977490174494, guid: 53d7f18d29bf8d140973e7cc4a9e6407, type: 3}
+  m_HideUIToggle: {fileID: 0}
+--- !u!114 &1442561797641865502
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5561955493356933093}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d4c241eb59838cf4d96ce3618bfe5370, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  BackgroundImageInput: {fileID: 0}
+  BackgroundMusicInput: {fileID: 0}
+  BackgroundMusicVolumeSlider: {fileID: 0}
+  BackgroundMusicStateToggle: {fileID: 0}
+  BackgroundImage: {fileID: 0}
+  BackgroundMusicAudio: {fileID: 0}
+  FPSDropdown: {fileID: 0}
+  m_SettingsFile: settings.json
+  m_CachedDataDirectoryName: cache
+  SupportedAudioFiles:
+  - .mp3
+  - .ogg
+  - .wav
