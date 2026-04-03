@@ -101,6 +101,7 @@ namespace NikkeViewerEX.Components
             }
 
             spawned = true;
+            Debug.Log($"[AzurLaneViewer] Starting spawn for {AlCharacterData.DisplayName}");
 
             // Populate NikkeData so base-class drag/scale/name systems work
             NikkeData.InstanceId = AlCharacterData.InstanceId;

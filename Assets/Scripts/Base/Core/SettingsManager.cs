@@ -143,6 +143,13 @@ namespace NikkeViewerEX.Core
             await LoadBackgroundSettings();
             await LoadNikkeData();
             await LoadAzurLaneData();
+            
+            // Refresh the active list count after loading all characters
+            var panels = FindObjectsByType<UI.NikkeBrowserPanel>(FindObjectsSortMode.None);
+            if (panels.Length > 0)
+            {
+                panels[0].RefreshActiveList();
+            }
         }
 
         /// <summary>

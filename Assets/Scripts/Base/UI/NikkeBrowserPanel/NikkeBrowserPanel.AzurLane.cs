@@ -219,6 +219,7 @@ namespace NikkeViewerEX.UI
                 addBtn.text = $"Added ({count})";
                 addBtn.SetEnabled(true);
 
+                RefreshActiveList();
                 UpdateAlBrowserCount();
             }
             catch (Exception ex)

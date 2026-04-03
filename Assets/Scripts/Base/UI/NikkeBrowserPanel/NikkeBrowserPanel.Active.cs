@@ -94,7 +94,7 @@ namespace NikkeViewerEX.UI
             });
         }
 
-        void RefreshActiveList()
+        public void RefreshActiveList()
         {
             RebuildActiveViewers();
             RefreshBackgroundPreview();

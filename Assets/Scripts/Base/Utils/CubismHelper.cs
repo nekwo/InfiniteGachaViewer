@@ -115,32 +115,39 @@ namespace NikkeViewerEX.Utils
             {
                 string motionName = Path.GetFileNameWithoutExtension(kvp.Key);
                 
-                var motion3Json = CubismMotion3Json.LoadFrom(kvp.Value, shouldCheckMotionConsistency: false);
-                if (motion3Json == null) continue;
-
-                AnimationClip clip = motion3Json.ToAnimationClip();
-                if (clip == null) continue;
-                clip.name = motionName;
-
-                // Strip animation events that have no function name (causes warnings)
-#if UNITY_EDITOR
-                var events = UnityEditor.AnimationUtility.GetAnimationEvents(clip);
-                if (events != null && events.Length > 0)
+                try
                 {
-                    UnityEditor.AnimationUtility.SetAnimationEvents(clip, Array.Empty<AnimationEvent>());
+                    var motion3Json = CubismMotion3Json.LoadFrom(kvp.Value, shouldCheckMotionConsistency: false);
+                    if (motion3Json == null) continue;
+
+                    AnimationClip clip = motion3Json.ToAnimationClip();
+                    if (clip == null) continue;
+                    clip.name = motionName;
+
+                    // Strip animation events that have no function name (causes warnings)
+    #if UNITY_EDITOR
+                    var events = UnityEditor.AnimationUtility.GetAnimationEvents(clip);
+                    if (events != null && events.Length > 0)
+                    {
+                        UnityEditor.AnimationUtility.SetAnimationEvents(clip, Array.Empty<AnimationEvent>());
+                    }
+    #endif
+
+                    // Store motion JSON for fade data creation later
+                    result.MotionJsonStrings[motionName] = kvp.Value;
+                    result.AllMotions.Add(clip);
+
+                    string baseName = Path.GetFileNameWithoutExtension(motionName);
+                    
+                    if (baseName.StartsWith("touch_", StringComparison.OrdinalIgnoreCase))
+                        result.TouchMotions.Add(clip);
+                    else if (baseName == "idle" || baseName == "home")
+                        result.IdleMotions.Add(clip);
                 }
-#endif
-
-                // Store motion JSON for fade data creation later
-                result.MotionJsonStrings[motionName] = kvp.Value;
-                result.AllMotions.Add(clip);
-
-                string baseName = Path.GetFileNameWithoutExtension(motionName);
-                
-                if (baseName.StartsWith("touch_", StringComparison.OrdinalIgnoreCase))
-                    result.TouchMotions.Add(clip);
-                else if (baseName == "idle" || baseName == "home")
-                    result.IdleMotions.Add(clip);
+                catch (Exception ex)
+                {
+                    Debug.LogWarning($"[CubismHelper] Failed to load motion {motionName}: {ex.Message}");
+                }
             }
 
             return result;
