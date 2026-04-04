@@ -95,18 +95,28 @@ namespace NikkeViewerEX.Core
         MainControl mainControl;
 
         #region Initialization
-        private async void Awake()
+        private void Awake()
         {
             mainControl = GetComponent<MainControl>();
             FPSDropdown.onValueChanged.AddListener(SetFrameRate);
             BackgroundMusicStateToggle.onValueChanged.AddListener(TogglePauseBGM);
+            AwakeAsync().Forget();
+        }
+
+        private async UniTaskVoid AwakeAsync()
+        {
             await Setup();
         }
 
-        private async void OnDestroy()
+        private void OnDestroy()
         {
             FPSDropdown.onValueChanged.RemoveListener(SetFrameRate);
             BackgroundMusicStateToggle.onValueChanged.RemoveListener(TogglePauseBGM);
+            OnDestroyAsync().Forget();
+        }
+
+        private async UniTaskVoid OnDestroyAsync()
+        {
             await SaveSettings();
         }
 
@@ -227,13 +237,10 @@ namespace NikkeViewerEX.Core
 
             BackgroundMusicVolumeSlider.value = BackgroundMusicAudio.volume =
                 NikkeSettings.BackgroundMusicVolume;
-            // if (NikkeSettings.BackgroundMusicPlaying)
-            // {
-            BackgroundMusicAudio.clip = await WebRequestHelper.GetAudioClip(
-                NikkeSettings.BackgroundMusic
-            );
-            BackgroundMusicAudio.Play();
-            // }
+            if (NikkeSettings.BackgroundMusicPlaying && BackgroundMusicAudio.clip != null)
+            {
+                BackgroundMusicAudio.Play();
+            }
             BackgroundMusicStateToggle.isOn = NikkeSettings.BackgroundMusicPlaying;
             TogglePauseBGM(NikkeSettings.BackgroundMusicPlaying);
 
@@ -242,7 +249,9 @@ namespace NikkeViewerEX.Core
         #endregion
 
         #region Runtime
-        public async void ApplySettings()
+        public void ApplySettings() => ApplySettingsAsync().Forget();
+
+        private async UniTaskVoid ApplySettingsAsync()
         {
             // Set background image
             BackgroundImage.sprite = File.Exists(BackgroundImageInput.text)
@@ -478,7 +487,10 @@ namespace NikkeViewerEX.Core
         /// </summary>
         /// <param name="inputField"></param>
         /// <returns></returns>
-        public async void OpenSettingsAssetDialog(TMP_InputField inputField)
+        public void OpenSettingsAssetDialog(TMP_InputField inputField) =>
+            OpenSettingsAssetDialogAsync(inputField).Forget();
+
+        private async UniTaskVoid OpenSettingsAssetDialogAsync(TMP_InputField inputField)
         {
             FileBrowser.SetFilters(
                 false,

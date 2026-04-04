@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using Cysharp.Threading.Tasks;
 using NikkeViewerEX.Components;
 using NikkeViewerEX.Core;
 using NikkeViewerEX.Utils;
@@ -40,8 +41,9 @@ namespace NikkeViewerEX.UI
 
         private void Awake()
         {
-            _mainControl = FindObjectsByType<MainControl>(FindObjectsSortMode.None)[0];
-            settingsManager = FindObjectsByType<SettingsManager>(FindObjectsSortMode.None)[0];
+            _mainControl = MainControl.Instance
+                ?? FindObjectsByType<MainControl>(FindObjectsSortMode.None)[0];
+            settingsManager = _mainControl.GetComponent<SettingsManager>();
             _inputFields = FindObjectsByType<TMP_InputField>(FindObjectsSortMode.None);
 
             NikkeNameText.onValueChanged.AddListener(RefreshNikkeName);
@@ -105,6 +107,7 @@ namespace NikkeViewerEX.UI
         {
             ItemCanvasGroup.interactable = !lockNikke;
             Viewer.NikkeData.Lock = lockNikke;
+            Viewer.OnNikkeDataChanged();
         }
 
         /// <summary>
@@ -134,7 +137,10 @@ namespace NikkeViewerEX.UI
                         name;
         }
 
-        public async void OpenNikkeAssetsDialog(TMP_InputField inputField)
+        public void OpenNikkeAssetsDialog(TMP_InputField inputField) =>
+            OpenNikkeAssetsDialogAsync(inputField).Forget();
+
+        private async UniTaskVoid OpenNikkeAssetsDialogAsync(TMP_InputField inputField)
         {
             FileBrowser.SetFilters(
                 false,
@@ -153,7 +159,10 @@ namespace NikkeViewerEX.UI
             }
         }
 
-        public async void OpenNikkeAssetDirectoriesDialog(TMP_InputField inputField)
+        public void OpenNikkeAssetDirectoriesDialog(TMP_InputField inputField) =>
+            OpenNikkeAssetDirectoriesDialogAsync(inputField).Forget();
+
+        private async UniTaskVoid OpenNikkeAssetDirectoriesDialogAsync(TMP_InputField inputField)
         {
             string[] paths = await StorageHelper.OpenDirectoryDialog(
                 inputField,

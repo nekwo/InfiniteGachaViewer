@@ -6,6 +6,17 @@ using UnityEngine.UIElements;
 
 namespace NikkeViewerEX.UI
 {
+    public enum BrowserTab
+    {
+        Config,
+        Browser,
+        Active,
+        Debug,
+        Presets,
+        Backgrounds,
+        Music,
+    }
+
     [AddComponentMenu("Nikke Viewer EX/UI/Nikke Browser Panel")]
     [RequireComponent(typeof(UIDocument))]
     public partial class NikkeBrowserPanel : MonoBehaviour
@@ -53,8 +64,9 @@ namespace NikkeViewerEX.UI
         #region Lifecycle
         void Awake()
         {
-            mainControl = FindObjectsByType<MainControl>(FindObjectsSortMode.None)[0];
-            settingsManager = FindObjectsByType<SettingsManager>(FindObjectsSortMode.None)[0];
+            mainControl = MainControl.Instance
+                ?? FindObjectsByType<MainControl>(FindObjectsSortMode.None)[0];
+            settingsManager = mainControl.GetComponent<SettingsManager>();
         }
 
         void OnEnable()
@@ -131,13 +143,13 @@ namespace NikkeViewerEX.UI
 
             hideUiToggle.RegisterValueChangedCallback(OnHideUiToggleChanged);
 
-            tabConfigBtn.clicked += () => SwitchTab(0);
-            tabBrowserBtn.clicked += () => SwitchTab(1);
-            tabActiveBtn.clicked += () => SwitchTab(2);
-            tabDebugBtn.clicked += () => SwitchTab(3);
-            tabPresetsBtn.clicked += () => SwitchTab(4);
-            tabBackgroundsBtn.clicked += () => SwitchTab(5);
-            tabMusicBtn.clicked += () => SwitchTab(6);
+            tabConfigBtn.clicked += () => SwitchTab(BrowserTab.Config);
+            tabBrowserBtn.clicked += () => SwitchTab(BrowserTab.Browser);
+            tabActiveBtn.clicked += () => SwitchTab(BrowserTab.Active);
+            tabDebugBtn.clicked += () => SwitchTab(BrowserTab.Debug);
+            tabPresetsBtn.clicked += () => SwitchTab(BrowserTab.Presets);
+            tabBackgroundsBtn.clicked += () => SwitchTab(BrowserTab.Backgrounds);
+            tabMusicBtn.clicked += () => SwitchTab(BrowserTab.Music);
 
             BindConfigEvents();
             BindBrowserEvents();
@@ -232,60 +244,39 @@ namespace NikkeViewerEX.UI
         #endregion
 
         #region Tab Switching
-        void SwitchTab(int index)
+        (Button btn, VisualElement content)[] _tabs;
+
+        (Button btn, VisualElement content)[] Tabs => _tabs ??= new[]
         {
-            tabConfigBtn.RemoveFromClassList("tab-active");
-            tabBrowserBtn.RemoveFromClassList("tab-active");
-            tabActiveBtn.RemoveFromClassList("tab-active");
-            tabDebugBtn.RemoveFromClassList("tab-active");
-            tabPresetsBtn.RemoveFromClassList("tab-active");
-            tabBackgroundsBtn.RemoveFromClassList("tab-active");
-            tabMusicBtn.RemoveFromClassList("tab-active");
+            (tabConfigBtn,      contentConfig),
+            (tabBrowserBtn,     contentBrowser),
+            (tabActiveBtn,      contentActive),
+            (tabDebugBtn,       contentDebug),
+            (tabPresetsBtn,     contentPresets),
+            (tabBackgroundsBtn, contentBackgrounds),
+            (tabMusicBtn,       contentMusic),
+        };
 
-            contentConfig.RemoveFromClassList("tab-visible");
-            contentBrowser.RemoveFromClassList("tab-visible");
-            contentActive.RemoveFromClassList("tab-visible");
-            contentDebug.RemoveFromClassList("tab-visible");
-            contentBackgrounds.RemoveFromClassList("tab-visible");
-            contentPresets.RemoveFromClassList("tab-visible");
-            contentMusic.RemoveFromClassList("tab-visible");
-
-            switch (index)
+        void SwitchTab(BrowserTab tab)
+        {
+            foreach (var (btn, content) in Tabs)
             {
-                case 0:
-                    tabConfigBtn.AddToClassList("tab-active");
-                    contentConfig.AddToClassList("tab-visible");
-                    break;
-                case 1:
-                    tabBrowserBtn.AddToClassList("tab-active");
-                    contentBrowser.AddToClassList("tab-visible");
-                    ApplyBrowserFilters();
-                    break;
-                case 2:
-                    tabActiveBtn.AddToClassList("tab-active");
-                    contentActive.AddToClassList("tab-visible");
-                    RefreshActiveList();
-                    break;
-                case 3:
-                    tabDebugBtn.AddToClassList("tab-active");
-                    contentDebug.AddToClassList("tab-visible");
-                    RefreshDebugList();
-                    break;
-                case 4:
-                    tabPresetsBtn.AddToClassList("tab-active");
-                    contentPresets.AddToClassList("tab-visible");
-                    RefreshPresetList();
-                    break;
-                case 5:
-                    tabBackgroundsBtn.AddToClassList("tab-active");
-                    contentBackgrounds.AddToClassList("tab-visible");
-                    RefreshBackgroundList();
-                    break;
-                case 6:
-                    tabMusicBtn.AddToClassList("tab-active");
-                    contentMusic.AddToClassList("tab-visible");
-                    RefreshMusicList();
-                    break;
+                btn.RemoveFromClassList("tab-active");
+                content.RemoveFromClassList("tab-visible");
+            }
+
+            var (activeBtn, activeContent) = Tabs[(int)tab];
+            activeBtn.AddToClassList("tab-active");
+            activeContent.AddToClassList("tab-visible");
+
+            switch (tab)
+            {
+                case BrowserTab.Browser:     ApplyBrowserFilters(); break;
+                case BrowserTab.Active:      RefreshActiveList();   break;
+                case BrowserTab.Debug:       RefreshDebugList();    break;
+                case BrowserTab.Presets:     RefreshPresetList();   break;
+                case BrowserTab.Backgrounds: RefreshBackgroundList(); break;
+                case BrowserTab.Music:       RefreshMusicList();    break;
             }
         }
         #endregion

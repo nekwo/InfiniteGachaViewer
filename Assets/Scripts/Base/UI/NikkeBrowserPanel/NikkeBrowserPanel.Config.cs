@@ -34,13 +34,13 @@ namespace NikkeViewerEX.UI
 
         void BindConfigEvents()
         {
-            root.Q<Button>("browse-json").clicked += BrowseJsonFile;
-            root.Q<Button>("browse-assets").clicked += BrowseAssetsFolder;
-            root.Q<Button>("browse-thumbnails").clicked += BrowseThumbnailsFolder;
-            root.Q<Button>("browse-backgrounds").clicked += BrowseBackgroundsFolder;
+            root.Q<Button>("browse-json").clicked += () => BrowseJsonFile().Forget();
+            root.Q<Button>("browse-assets").clicked += () => BrowseAssetsFolder().Forget();
+            root.Q<Button>("browse-thumbnails").clicked += () => BrowseThumbnailsFolder().Forget();
+            root.Q<Button>("browse-backgrounds").clicked += () => BrowseBackgroundsFolder().Forget();
             root.Q<Button>("browse-bgm").clicked += () => BrowseBgmFile().Forget();
-            root.Q<Button>("browse-al-json").clicked += BrowseAlJsonFile;
-            root.Q<Button>("browse-al-assets").clicked += BrowseAlAssetsFolder;
+            root.Q<Button>("browse-al-json").clicked += () => BrowseAlJsonFile().Forget();
+            root.Q<Button>("browse-al-assets").clicked += () => BrowseAlAssetsFolder().Forget();
             loadButton.clicked += () => LoadDatabase().Forget();
         }
 
@@ -84,28 +84,28 @@ namespace NikkeViewerEX.UI
                 PopulateAzurLaneList();
         }
 
-        async void BrowseJsonFile()
+        async UniTaskVoid BrowseJsonFile()
         {
             string path = await OpenFileBrowser("Select Character Database JSON", new[] { "json" });
             if (!string.IsNullOrEmpty(path))
                 jsonPathInput.value = path;
         }
 
-        async void BrowseAssetsFolder()
+        async UniTaskVoid BrowseAssetsFolder()
         {
             string path = await OpenFolderBrowser("Select Assets Root Folder");
             if (!string.IsNullOrEmpty(path))
                 assetsFolderInput.value = path;
         }
 
-        async void BrowseThumbnailsFolder()
+        async UniTaskVoid BrowseThumbnailsFolder()
         {
             string path = await OpenFolderBrowser("Select Thumbnails Folder");
             if (!string.IsNullOrEmpty(path))
                 thumbnailsFolderInput.value = path;
         }
 
-        async void BrowseBackgroundsFolder()
+        async UniTaskVoid BrowseBackgroundsFolder()
         {
             string path = await OpenFolderBrowser("Select Backgrounds Folder");
             if (!string.IsNullOrEmpty(path))
@@ -127,14 +127,14 @@ namespace NikkeViewerEX.UI
             }
         }
 
-        async void BrowseAlJsonFile()
+        async UniTaskVoid BrowseAlJsonFile()
         {
             string path = await OpenFileBrowser("Select Azur Lane Database JSON", new[] { "json" });
             if (!string.IsNullOrEmpty(path))
                 alJsonPathInput.value = path;
         }
 
-        async void BrowseAlAssetsFolder()
+        async UniTaskVoid BrowseAlAssetsFolder()
         {
             string path = await OpenFolderBrowser("Select Azur Lane Assets Root Folder");
             if (!string.IsNullOrEmpty(path))
@@ -216,7 +216,7 @@ namespace NikkeViewerEX.UI
 
             PopulateBrowserList();
             PopulateAzurLaneList();
-            SwitchTab(1);
+            SwitchTab(BrowserTab.Browser);
         }
 
         void SetStatus(string message, bool isError)

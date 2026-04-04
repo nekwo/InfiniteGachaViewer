@@ -76,9 +76,8 @@ namespace NikkeViewerEX.Components
             InputManager.PointerClick.performed -= OnPointerClick;
         }
 
-        public override void Update()
+        public override void OnNikkeDataChanged()
         {
-            // Mirror transform state back to AlCharacterData so SaveSettings persists correctly.
             AlCharacterData.Position = NikkeData.Position;
             AlCharacterData.Scale = NikkeData.Scale;
             AlCharacterData.Lock = NikkeData.Lock;
@@ -389,10 +388,10 @@ namespace NikkeViewerEX.Components
 
         void OnPointerClick(InputAction.CallbackContext ctx)
         {
-            if (cubismModel == null || NikkeData.Lock || !Application.isPlaying) return;
+            if (cubismModel == null || !Application.isPlaying) return;
 
             // Raycast to detect which body part was clicked
-            Camera cam = Camera.main;
+            Camera cam = CachedCamera;
             string hitAreaName = "Body";
             
             if (cam != null && raycaster != null)
@@ -524,6 +523,36 @@ namespace NikkeViewerEX.Components
             var names = new System.Collections.Generic.List<string>();
             foreach (var c in allMotions) names.Add(c.name);
             return names.ToArray();
+        }
+
+        public override void PlayAnimationByName(string animationName)
+        {
+            if (cubismModel == null || allMotions.Count == 0) return;
+
+            // Find the matching animation clip
+            AnimationClip clipToPlay = null;
+            foreach (var clip in allMotions)
+            {
+                if (clip.name.Equals(animationName, StringComparison.OrdinalIgnoreCase))
+                {
+                    clipToPlay = clip;
+                    break;
+                }
+            }
+
+            if (clipToPlay == null)
+            {
+                Debug.LogWarning($"[AzurLaneViewer] Animation not found: {animationName}");
+                return;
+            }
+
+            var motionController = cubismModel.GetComponent<Live2D.Cubism.Framework.Motion.CubismMotionController>();
+            if (motionController != null)
+            {
+                isPlayingTouchMotion = true;
+                motionController.PlayAnimation(clipToPlay, layerIndex: 1, isLoop: false, 
+                    priority: Live2D.Cubism.Framework.Motion.CubismMotionPriority.PriorityForce);
+            }
         }
     }
 }

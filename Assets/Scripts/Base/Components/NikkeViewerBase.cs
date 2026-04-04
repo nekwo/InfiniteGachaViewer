@@ -32,6 +32,21 @@ namespace NikkeViewerEX.Components
         readonly SpineHelperBase spineHelper = new();
         public TextMeshPro NikkeNameText { get; set; }
 
+        /// <summary>
+        /// Cached main camera reference. Use this instead of Camera.main in hot paths.
+        /// Falls back to Camera.main if the cached reference becomes null (e.g. camera recreated).
+        /// </summary>
+        Camera _cachedCamera;
+        public Camera CachedCamera
+        {
+            get
+            {
+                if (_cachedCamera == null)
+                    _cachedCamera = Camera.main;
+                return _cachedCamera;
+            }
+        }
+
         readonly float dragSmoothTime = .1f;
         Vector2 dragObjectVelocity;
         Vector3 dragObjectOffset;
@@ -74,9 +89,11 @@ namespace NikkeViewerEX.Components
 
         private void Awake()
         {
-            MainControl = FindObjectsByType<MainControl>(FindObjectsSortMode.None)[0];
+            MainControl = Core.MainControl.Instance
+                ?? FindObjectsByType<MainControl>(FindObjectsSortMode.None)[0];
+            SettingsManager = MainControl.GetComponent<SettingsManager>();
             InputManager = FindObjectsByType<InputManager>(FindObjectsSortMode.None)[0];
-            SettingsManager = FindObjectsByType<SettingsManager>(FindObjectsSortMode.None)[0];
+            _cachedCamera = Camera.main;
             NikkeAudioSource = GetComponent<AudioSource>();
         }
 
@@ -145,6 +162,11 @@ namespace NikkeViewerEX.Components
         public virtual List<PoseDebugInfo> GetPoseDebugInfo() => new();
 
         /// <summary>
+        /// Play an animation by name. Override in subclasses.
+        /// </summary>
+        public virtual void PlayAnimationByName(string animationName) { }
+
+        /// <summary>
         /// Add MeshCollider component to the specified target (or this GameObject).
         /// </summary>
         public void AddMeshCollider(GameObject target = null)
@@ -161,11 +183,16 @@ namespace NikkeViewerEX.Components
         /// </summary>
         /// <param name="ctx"></param>
         /// <returns></returns>
-        private async void DragNikke(InputAction.CallbackContext ctx)
+        private void DragNikke(InputAction.CallbackContext ctx)
+        {
+            DragNikkeAsync(ctx).Forget();
+        }
+
+        private async UniTaskVoid DragNikkeAsync(InputAction.CallbackContext ctx)
         {
             if (!NikkeData.Lock)
             {
-                Ray ray = Camera.main.ScreenPointToRay(Mouse.current.position.ReadValue());
+                Ray ray = CachedCamera.ScreenPointToRay(Mouse.current.position.ReadValue());
                 if (Physics.Raycast(ray, out RaycastHit hit))
                 {
                     var viewer = hit.collider.GetComponentInParent<NikkeViewerBase>();
@@ -187,16 +214,16 @@ namespace NikkeViewerEX.Components
 
             float initialDistance = Vector3.Distance(
                 clickedObject.transform.position,
-                Camera.main.transform.position
+                CachedCamera.transform.position
             );
 
-            Ray initialRay = Camera.main.ScreenPointToRay(Mouse.current.position.ReadValue());
+            Ray initialRay = CachedCamera.ScreenPointToRay(Mouse.current.position.ReadValue());
             Vector3 initialPoint = initialRay.GetPoint(initialDistance);
             dragObjectOffset = clickedObject.transform.position - initialPoint;
 
             while (InputManager.PointerHold.ReadValue<float>() != 0)
             {
-                Ray ray = Camera.main.ScreenPointToRay(Mouse.current.position.ReadValue());
+                Ray ray = CachedCamera.ScreenPointToRay(Mouse.current.position.ReadValue());
                 Vector3 targetPoint = ray.GetPoint(initialDistance) + dragObjectOffset;
                 clickedObject.transform.position = Vector2.SmoothDamp(
                     clickedObject.transform.position,
@@ -222,16 +249,23 @@ namespace NikkeViewerEX.Components
                 NikkeData.Position = gameObject.transform.position;
                 dragObjectVelocity = Vector2.zero;
                 IsDragged = false;
+                OnNikkeDataChanged();
                 await SettingsManager.SaveSettings();
             }
         }
         #endregion
+
+        /// <summary>
+        /// Called after NikkeData fields are mutated. Override to sync derived data.
+        /// </summary>
+        public virtual void OnNikkeDataChanged() { }
 
         public void AdjustNikkeScale(float scale)
         {
             Vector3 newScale = Vector3.one * scale;
             transform.localScale = newScale;
             NikkeData.Scale = newScale;
+            OnNikkeDataChanged();
             SettingsManager.SaveSettings().Forget();
         }
 

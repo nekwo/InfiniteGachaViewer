@@ -132,7 +132,7 @@ namespace NikkeViewerEX.UI
                 else
                     thumbnailEl.AddToClassList("thumbnail-missing");
 
-                addBtn.clicked += () => AddAzurLaneCharacter(entry, addBtn, assetInfo);
+                addBtn.clicked += () => AddAzurLaneCharacter(entry, addBtn, assetInfo).Forget();
 
                 alBrowserList.Add(item);
                 alBrowserItems.Add((item, entry));
@@ -169,7 +169,7 @@ namespace NikkeViewerEX.UI
             alBrowserCount.text = $"{alBrowserItems.Count} characters available, {active} active";
         }
 
-        async void AddAzurLaneCharacter(NikkeDatabaseEntry entry, Button addBtn, AzurLaneAssetInfo assetInfo)
+        async UniTaskVoid AddAzurLaneCharacter(NikkeDatabaseEntry entry, Button addBtn, AzurLaneAssetInfo assetInfo)
         {
             if (assetInfo == null || !assetInfo.IsValid)
             {
@@ -230,7 +230,7 @@ namespace NikkeViewerEX.UI
             }
         }
 
-        async void RemoveAzurLaneCharacter(int instanceId)
+        async UniTaskVoid RemoveAzurLaneCharacter(int instanceId)
         {
             string assetNameToUpdate = null;
 

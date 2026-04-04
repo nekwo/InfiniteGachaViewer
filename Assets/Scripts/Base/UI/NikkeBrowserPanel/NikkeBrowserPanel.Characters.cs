@@ -71,7 +71,12 @@ namespace NikkeViewerEX.UI
                 Texture2D tex = new(2, 2);
                 tex.LoadImage(data);
                 tex.name = Path.GetFileNameWithoutExtension(texturePaths[0]);
+
+                // Destroy the previous texture to avoid GPU memory leak
+                var oldTex = renderer.material.mainTexture;
                 renderer.material.mainTexture = tex;
+                if (oldTex != null)
+                    UnityEngine.Object.Destroy(oldTex);
 
                 if (texturePaths.Count > 1 && renderer.materials.Length > 1)
                 {
@@ -82,7 +87,11 @@ namespace NikkeViewerEX.UI
                         Texture2D pageTex = new(2, 2);
                         pageTex.LoadImage(pageData);
                         pageTex.name = Path.GetFileNameWithoutExtension(texturePaths[i]);
+
+                        var oldPageTex = materials[i].mainTexture;
                         materials[i].mainTexture = pageTex;
+                        if (oldPageTex != null)
+                            UnityEngine.Object.Destroy(oldPageTex);
                     }
                     renderer.materials = materials;
                 }
@@ -115,7 +124,7 @@ namespace NikkeViewerEX.UI
         bool IsCharacterActive(string id) =>
             settingsManager.NikkeSettings.NikkeList.Exists(n => n.AssetName == id);
 
-        async void AddCharacter(
+        async UniTaskVoid AddCharacter(
             NikkeDatabaseEntry entry,
             Button addBtn,
             Label addedLabel,
@@ -212,7 +221,7 @@ namespace NikkeViewerEX.UI
             }
         }
 
-        async void RemoveCharacter(int instanceId)
+        async UniTaskVoid RemoveCharacter(int instanceId)
         {
             string assetNameToUpdate = null;
             

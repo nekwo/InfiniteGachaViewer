@@ -47,6 +47,9 @@ namespace NikkeViewerEX.Components
         [Range(0.1f, 3f)]
         float m_TransitionSpeed = 1f;
 
+        [SerializeField]
+        string m_ShaderName = "Universal Render Pipeline/Spine 4.0/Skeleton";
+
         [Header("UI")]
         [SerializeField]
         TextMeshPro m_NikkeNamePrefab;
@@ -76,6 +79,7 @@ namespace NikkeViewerEX.Components
         {
             base.OnEnable();
             MainControl.OnSettingsApplied += SpawnNikke;
+            MainControl.HideUIToggle.onValueChanged.AddListener(ToggleDisplayName);
             SettingsManager.OnSettingsLoaded += SpawnNikke;
             InputManager.PointerClick.performed += Interact;
             InputManager.MiddleClick.performed += ToggleCoverPose;
@@ -88,6 +92,7 @@ namespace NikkeViewerEX.Components
         {
             base.OnDestroy();
             MainControl.OnSettingsApplied -= SpawnNikke;
+            MainControl.HideUIToggle.onValueChanged.RemoveListener(ToggleDisplayName);
             SettingsManager.OnSettingsLoaded -= SpawnNikke;
             InputManager.PointerClick.performed -= Interact;
             InputManager.MiddleClick.performed -= ToggleCoverPose;
@@ -122,7 +127,7 @@ namespace NikkeViewerEX.Components
                 NikkeNameText = CreateDisplayName(NikkeData.NikkeName);
         }
 
-        private async void SpawnNikke()
+        private async UniTaskVoid SpawnNikkeAsync()
         {
             try
             {
@@ -153,7 +158,7 @@ namespace NikkeViewerEX.Components
                         pose.AtlasPath,
                         pose.TexturesPath,
                         poseGO,
-                        Shader.Find("Universal Render Pipeline/Spine 4.0/Skeleton"),
+                        Shader.Find(m_ShaderName),
                         spineScale: 0.25f,
                         loop: true,
                         defaultAnimation: GetDefaultAnimation(pose.PoseType)
@@ -171,13 +176,10 @@ namespace NikkeViewerEX.Components
                 // Wait a frame so Spine generates meshes for all poses
                 await UniTask.Yield();
 
-                // Add mesh colliders to all poses, then hide non-active ones
-                // Toggle renderer/collider instead of SetActive to keep animations running
                 // Add colliders and snapshot idle meshes before hiding any poses
                 foreach (var (type, (go, anim)) in poseInstances)
                     AddMeshCollider(go);
 
-                // All poses are visible here — snapshot their idle meshes
                 foreach (var (type, (go, anim)) in poseInstances)
                 {
                     if (go.TryGetComponent(out MeshFilter mf))
@@ -195,12 +197,9 @@ namespace NikkeViewerEX.Components
                 var active = ActiveSkeleton;
                 if (active != null)
                 {
-                    // If active pose is Aim, we need to set up aim blend on restart
                     if (NikkeData.ActivePose == NikkePoseType.Aim)
                         SetupAimBlend(active);
-                }
-                if (active != null)
-                {
+
                     Skins = active.Skeleton.Data.Skins?.Select(skin => skin.Name).ToArray();
                     TouchAnimations = active.Skeleton.Data.Animations.Items
                         .Take(active.Skeleton.Data.Animations.Count)
@@ -222,12 +221,13 @@ namespace NikkeViewerEX.Components
             }
         }
 
+        void SpawnNikke() => SpawnNikkeAsync().Forget();
+
         public override void SetActivePose(NikkePoseType poseType)
         {
             if (!poseInstances.ContainsKey(poseType)) return;
             if (poseType == NikkeData.ActivePose) return;
 
-            // Cancel any in-progress transition and snap
             transitionCts?.Cancel();
             transitionCts = new CancellationTokenSource();
             TransitionToPose(poseType, transitionCts.Token).Forget();
@@ -238,10 +238,8 @@ namespace NikkeViewerEX.Components
             var previousPose = NikkeData.ActivePose;
             var current = poseInstances[previousPose];
 
-            // Update active pose immediately so subsequent calls see the correct state
             NikkeData.ActivePose = poseType;
 
-            // Pick transition animation based on target pose
             string transitionAnim = poseType switch
             {
                 NikkePoseType.Cover => m_TransitionToCover,
@@ -275,24 +273,26 @@ namespace NikkeViewerEX.Components
                 }
             }
 
-            // Clear aim blend if leaving Aim pose
             if (previousPose == NikkePoseType.Aim)
                 ClearAimBlend(current.anim);
 
-            // Swap visibility
             SetPoseVisible(current.go, false);
-            // Restore outgoing skeleton to its default idle
             current.anim.AnimationState.SetAnimation(
                 0, GetDefaultAnimation(previousPose), true
             );
             var target = poseInstances[poseType];
             SetPoseVisible(target.go, true);
 
-            // Set up aim blend if entering Aim pose
+            // Pin incoming collider to idle snapshot — the live mesh may still
+            // reflect the last transition animation frame and MeshCollider doesn't
+            // auto-rebake when Spine mutates the underlying Mesh data.
+            if (target.go.TryGetComponent(out MeshCollider targetMc)
+                && idleColliderMeshes.TryGetValue(poseType, out var targetIdleMesh))
+                targetMc.sharedMesh = targetIdleMesh;
+
             if (poseType == NikkePoseType.Aim)
                 SetupAimBlend(target.anim);
 
-            // Update metadata from new active skeleton
             Skins = target.anim.Skeleton.Data.Skins?.Select(s => s.Name).ToArray();
             TouchAnimations = target.anim.Skeleton.Data.Animations.Items
                 .Take(target.anim.Skeleton.Data.Animations.Count)
@@ -325,29 +325,19 @@ namespace NikkeViewerEX.Components
             aimReticle.SetAsLastSibling();
             reticleGO.AddComponent<AimReticle>();
 
-            // Track 0: base idle (MixBlend.Replace by default)
-            // adds the additive first with out mixblend.add to esure it doesn't explode
-            // Track 1+: additive animations (MixBlend.Add adds on top of track 0's result)
-            var aimIdle = data.FindAnimation(m_AimDefaultAnimation);
-
-             // if (aimIdle != null)
-            //     skel.AnimationState.SetAnimation(1, aimIdle, true);
-
             if (aimX != null)
             {
                 aimXTrack = skel.AnimationState.SetAnimation(1, aimX, false);
-                //aimXTrack.MixBlend = Spine.MixBlend.Add;
                 aimXTrack.Alpha = 0.05f;
                 aimXTrack.TimeScale = 0;
             }
             if (aimY != null)
             {
                 aimYTrack = skel.AnimationState.SetAnimation(2, aimY, false);
-                //aimYTrack.MixBlend = Spine.MixBlend.Add;
                 aimYTrack.Alpha = 0.05f;
                 aimYTrack.TimeScale = 0;
             }
-            
+
             if (aimX != null)
             {
                 aimXTrack = skel.AnimationState.SetAnimation(3, aimX, false);
@@ -373,7 +363,7 @@ namespace NikkeViewerEX.Components
         {
             if (!aimBlendActive) return;
             aimBlendActive = false;
-            for (int i = 0; i <= 4; i++)
+            for (int i = 1; i <= 4; i++)
                 skel.AnimationState.SetEmptyAnimation(i, 0);
             aimXTrack = null;
             aimYTrack = null;
@@ -400,7 +390,6 @@ namespace NikkeViewerEX.Components
             var patterns = JiggleSettingsManager.GetPatterns(charSettings);
             var explicitBones = charSettings?.Bones ?? new List<JiggleBoneSettings>();
 
-            // Auto-discover bones from keyword patterns
             var discovered = new List<JiggleBoneSettings>();
             var registeredNames = new HashSet<string>(explicitBones.ConvertAll(b => b.BoneName));
 
@@ -410,12 +399,9 @@ namespace NikkeViewerEX.Components
                 {
                     string name = bone.Data.Name;
                     if (name.Length == 0 || (name[0] != '@' && name[0] != '#')) continue;
-                    if (name.IndexOf("shadow", System.StringComparison.OrdinalIgnoreCase) >= 0) continue;
+                    if (name.Contains("shadow", System.StringComparison.OrdinalIgnoreCase)) continue;
                     if (name == "@a_hair_") continue;
                     if (name.IndexOf("hair_0", System.StringComparison.OrdinalIgnoreCase) >= 0) continue;
-                    //if (name.IndexOf("hair_1", System.StringComparison.OrdinalIgnoreCase) >= 0) continue;
-                    //if (name.IndexOf("hair_2", System.StringComparison.OrdinalIgnoreCase) >= 0) continue;
-                    //if (name.IndexOf("hair_3", System.StringComparison.OrdinalIgnoreCase) >= 0) continue;
                     if (name.IndexOf("acc_1", System.StringComparison.OrdinalIgnoreCase) >= 0) continue;
                     if (registeredNames.Contains(name)) continue;
                     if (name.IndexOf(pattern.Keyword, System.StringComparison.OrdinalIgnoreCase) < 0) continue;
@@ -478,6 +464,7 @@ namespace NikkeViewerEX.Components
         void UpdateAimBlend()
         {
             if (!aimBlendActive) return;
+            if (!poseInstances.TryGetValue(NikkePoseType.Aim, out var inst)) return;
 
             Vector2 mousePos = Mouse.current.position.ReadValue();
             float normalizedX = mousePos.x / Screen.width;
@@ -487,12 +474,13 @@ namespace NikkeViewerEX.Components
                 aimXTrack.TrackTime = aimXTrack.Animation.Duration * normalizedX;
             if (aimYTrack != null)
                 aimYTrack.TrackTime = aimYTrack.Animation.Duration * normalizedY;
+
             {
                 var canvasRect = aimReticle.GetComponentInParent<Canvas>().GetComponent<RectTransform>();
                 RectTransformUtility.ScreenPointToLocalPointInRectangle(
                     canvasRect,
                     mousePos,
-                    Camera.main,
+                    CachedCamera,
                     out Vector2 canvasPos
                 );
                 aimReticle.anchoredPosition = canvasPos;
@@ -524,10 +512,6 @@ namespace NikkeViewerEX.Components
             return list;
         }
 
-        /// <summary>
-        /// Toggle a pose's renderer and collider without deactivating the GameObject.
-        /// This keeps the SkeletonAnimation running so animations don't freeze.
-        /// </summary>
         static void SetPoseVisible(GameObject poseGO, bool visible)
         {
             if (poseGO.TryGetComponent(out MeshRenderer renderer))
@@ -535,7 +519,6 @@ namespace NikkeViewerEX.Components
             if (poseGO.TryGetComponent(out MeshCollider collider))
             {
                 collider.enabled = visible;
-                // Refresh collider mesh — transition animations change the mesh
                 if (visible && poseGO.TryGetComponent(out MeshFilter meshFilter))
                     collider.sharedMesh = meshFilter.sharedMesh;
             }
@@ -563,14 +546,13 @@ namespace NikkeViewerEX.Components
                 transform.position.z
             );
 
-            Vector3 screenPosition = Camera.main.WorldToScreenPoint(worldPosition);
+            Vector3 screenPosition = CachedCamera.WorldToScreenPoint(worldPosition);
 
-            // Convert screen position to Canvas space
             RectTransform canvasRect = tmp.canvas.GetComponent<RectTransform>();
             RectTransformUtility.ScreenPointToLocalPointInRectangle(
                 canvasRect,
                 screenPosition,
-                Camera.main,
+                CachedCamera,
                 out Vector2 canvasPosition
             );
 
@@ -581,7 +563,7 @@ namespace NikkeViewerEX.Components
         {
             if (!ctx.performed) return;
 
-            Ray ray = Camera.main.ScreenPointToRay(Mouse.current.position.ReadValue());
+            Ray ray = CachedCamera.ScreenPointToRay(Mouse.current.position.ReadValue());
             if (Physics.Raycast(ray, out RaycastHit hit))
             {
                 var viewer = hit.collider.GetComponentInParent<NikkeViewer>();
@@ -631,7 +613,7 @@ namespace NikkeViewerEX.Components
         {
             if (ctx.performed)
             {
-                Ray ray = Camera.main.ScreenPointToRay(Mouse.current.position.ReadValue());
+                Ray ray = CachedCamera.ScreenPointToRay(Mouse.current.position.ReadValue());
                 if (Physics.Raycast(ray, out RaycastHit hit))
                 {
                     var viewer = hit.collider.GetComponentInParent<NikkeViewer>();

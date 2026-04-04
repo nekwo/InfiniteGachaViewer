@@ -11,6 +11,8 @@ namespace NikkeViewerEX.Utils
     /// </summary>
     public static class WebRequestHelper
     {
+        static readonly System.Collections.Concurrent.ConcurrentDictionary<string, UniTask<string>> _cacheInFlight = new();
+
         /// <summary>
         /// Request a file and retrieve the data as text.
         /// </summary>
@@ -137,16 +139,28 @@ namespace NikkeViewerEX.Utils
         /// <param name="uri"></param>
         /// <param name="savePath"></param>
         /// <returns></returns>
-        public static async UniTask<string> CacheAsset(string uri, string savePath)
+        public static UniTask<string> CacheAsset(string uri, string savePath)
         {
             if (File.Exists(savePath))
-                return savePath;
+                return UniTask.FromResult(savePath);
 
-            byte[] data = await GetBinaryData(uri);
-            await using FileStream fs =
-                new(savePath, FileMode.Create, FileAccess.Write, FileShare.Read);
-            await fs.WriteAsync(data);
-            return savePath;
+            return _cacheInFlight.GetOrAdd(savePath, _ => CacheAssetCore(uri, savePath));
+        }
+
+        private static async UniTask<string> CacheAssetCore(string uri, string savePath)
+        {
+            try
+            {
+                byte[] data = await GetBinaryData(uri);
+                await using FileStream fs =
+                    new(savePath, FileMode.Create, FileAccess.Write, FileShare.Read);
+                await fs.WriteAsync(data);
+                return savePath;
+            }
+            finally
+            {
+                _cacheInFlight.TryRemove(savePath, out _);
+            }
         }
     }
 }

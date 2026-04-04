@@ -61,7 +61,7 @@ namespace NikkeViewerEX.UI
                 activeMusicVolumeValue.text = $"{Mathf.RoundToInt(vol * 100)}%";
                 settingsManager.BackgroundMusicAudio.volume = vol;
                 settingsManager.NikkeSettings.BackgroundMusicVolume = vol;
-                settingsManager.SaveSettings().Forget();
+                SaveSettingsDebounced();
             });
 
             activeBgSlider.RegisterValueChangedCallback(evt =>
@@ -70,7 +70,7 @@ namespace NikkeViewerEX.UI
                 activeBgScaleValue.text = $"{val:F1}x";
                 settingsManager.BackgroundImage.transform.localScale = Vector3.one * val;
                 settingsManager.NikkeSettings.BackgroundScale = val;
-                settingsManager.SaveSettings().Forget();
+                SaveSettingsDebounced();
             });
 
             activeBgPanX.RegisterValueChangedCallback(evt =>
@@ -80,7 +80,7 @@ namespace NikkeViewerEX.UI
                 var pos = settingsManager.BackgroundImage.rectTransform.anchoredPosition;
                 settingsManager.BackgroundImage.rectTransform.anchoredPosition = new Vector2(val, pos.y);
                 settingsManager.NikkeSettings.BackgroundPanX = val;
-                settingsManager.SaveSettings().Forget();
+                SaveSettingsDebounced();
             });
 
             activeBgPanY.RegisterValueChangedCallback(evt =>
@@ -90,7 +90,7 @@ namespace NikkeViewerEX.UI
                 var pos = settingsManager.BackgroundImage.rectTransform.anchoredPosition;
                 settingsManager.BackgroundImage.rectTransform.anchoredPosition = new Vector2(pos.x, val);
                 settingsManager.NikkeSettings.BackgroundPanY = val;
-                settingsManager.SaveSettings().Forget();
+                SaveSettingsDebounced();
             });
         }
 
@@ -190,7 +190,8 @@ namespace NikkeViewerEX.UI
                         Vector3 newScale = Vector3.one * val;
                         viewer.transform.localScale = newScale;
                         viewer.NikkeData.Scale = newScale;
-                        settingsManager.SaveSettings().Forget();
+                        viewer.OnNikkeDataChanged();
+                        SaveSettingsDebounced();
                     }
                 });
 
@@ -202,6 +203,7 @@ namespace NikkeViewerEX.UI
                     if (activeViewers.TryGetValue(instanceId, out var viewer))
                     {
                         viewer.NikkeData.HideName = !evt.newValue;
+                        viewer.OnNikkeDataChanged();
                         viewer.EnsureNameText();
                         viewer.ToggleDisplayName(false);
                         settingsManager.SaveSettings().Forget();
@@ -216,13 +218,14 @@ namespace NikkeViewerEX.UI
                     if (activeViewers.TryGetValue(instanceId, out var viewer))
                     {
                         viewer.NikkeData.Lock = evt.newValue;
+                        viewer.OnNikkeDataChanged();
                         settingsManager.SaveSettings().Forget();
                     }
                 });
 
                 item.Q<Button>("remove-button").clicked += () =>
                 {
-                    RemoveCharacter(instanceId);
+                    RemoveCharacter(instanceId).Forget();
                 };
 
                 activeList.Add(item);
@@ -258,7 +261,8 @@ namespace NikkeViewerEX.UI
                         Vector3 newScale = Vector3.one * val;
                         viewer.transform.localScale = newScale;
                         viewer.NikkeData.Scale = newScale;
-                        settingsManager.SaveSettings().Forget();
+                        viewer.OnNikkeDataChanged();
+                        SaveSettingsDebounced();
                     }
                 });
 
@@ -270,6 +274,7 @@ namespace NikkeViewerEX.UI
                     if (activeViewers.TryGetValue(instanceId, out var viewer))
                     {
                         viewer.NikkeData.HideName = !evt.newValue;
+                        viewer.OnNikkeDataChanged();
                         viewer.EnsureNameText();
                         viewer.ToggleDisplayName(false);
                         settingsManager.SaveSettings().Forget();
@@ -284,13 +289,14 @@ namespace NikkeViewerEX.UI
                     if (activeViewers.TryGetValue(instanceId, out var viewer))
                     {
                         viewer.NikkeData.Lock = evt.newValue;
+                        viewer.OnNikkeDataChanged();
                         settingsManager.SaveSettings().Forget();
                     }
                 });
 
                 item.Q<Button>("remove-button").clicked += () =>
                 {
-                    RemoveAzurLaneCharacter(instanceId);
+                    RemoveAzurLaneCharacter(instanceId).Forget();
                 };
 
                 activeList.Add(item);

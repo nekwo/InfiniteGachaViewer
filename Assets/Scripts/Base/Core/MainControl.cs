@@ -23,6 +23,11 @@ namespace NikkeViewerEX.Core
     [RequireComponent(typeof(SettingsManager))]
     public class MainControl : MonoBehaviour
     {
+        /// <summary>
+        /// Singleton instance, set in Awake. Use this instead of FindObjectsByType.
+        /// </summary>
+        public static MainControl Instance { get; private set; }
+
         [Header("Spine Settings")]
         [Tooltip("List of Prefabs containing supported Spine version")]
         [SerializeField]
@@ -40,9 +45,6 @@ namespace NikkeViewerEX.Core
 
         [SerializeField]
         private RectTransform m_WelcomePanel;
-
-        // [SerializeField]
-        // private NonNativeKeyboard m_OnScreenKeyboardPrefab;
 
         [Tooltip("Nikke List - List View content")]
         [SerializeField]
@@ -103,12 +105,10 @@ namespace NikkeViewerEX.Core
         private GameObject _focusedInput;
         private TMP_InputField[] _inputFields;
 
-        // private InputManager inputManager;
-
         #region Initialization
         private void Awake()
         {
-            // inputManager = FindObjectsByType<InputManager>(FindObjectsSortMode.None)[0];
+            Instance = this;
             settingsManager = GetComponent<SettingsManager>();
 
             if (NonNativeKeyboard.Instance != null)
@@ -121,13 +121,11 @@ namespace NikkeViewerEX.Core
 
         private void OnEnable()
         {
-            // inputManager.ToggleUI.performed += ToggleUI;
             m_HideUIToggle.onValueChanged.AddListener(ToggleHideUI);
         }
 
         private void OnDestroy()
         {
-            // inputManager.ToggleHideUI.performed -= ToggleUI;
             m_HideUIToggle.onValueChanged.RemoveListener(ToggleHideUI);
 
             PanelNotificationCenter.OnActiveTabChanged -=
@@ -169,7 +167,7 @@ namespace NikkeViewerEX.Core
         public void OnScreenKeyboard_OnTextSubmitted(object sender, EventArgs e)
         {
             NonNativeKeyboard keyboard = sender as NonNativeKeyboard;
-            if (_focusedInput.TryGetComponent(out TMP_InputField inputField))
+            if (_focusedInput != null && _focusedInput.TryGetComponent(out TMP_InputField inputField))
                 inputField.text = keyboard.InputField.text;
             _focusedInput = null;
         }
@@ -200,7 +198,9 @@ namespace NikkeViewerEX.Core
         /// Apply settings.
         /// </summary>
         /// <returns></returns>
-        public async void ApplyNikkeSettings()
+        public void ApplyNikkeSettings() => ApplyNikkeSettingsAsync().Forget();
+
+        private async UniTaskVoid ApplyNikkeSettingsAsync()
         {
             NikkeListItem[] listItems = m_NikkeListContent.GetComponentsInChildren<NikkeListItem>();
             List<Nikke> nikkeDataList = new();
@@ -286,8 +286,6 @@ namespace NikkeViewerEX.Core
             m_HideUIToggle.isOn = state;
         }
 
-        // private void ToggleHideUI(InputAction.CallbackContext ctx) => ToggleHideUI(ctx.performed);
-
         public void HideInfoUI(bool state)
         {
             m_WelcomePanel.gameObject.SetActive(!state);
@@ -316,13 +314,6 @@ namespace NikkeViewerEX.Core
                         .ToList()
                         .SequenceEqual(item.Viewer.NikkeData.TexturesPath)
                 );
-            // || (
-            //     !string.IsNullOrEmpty(item.VoicesSourceText.text)
-            //     && !item
-            //         .VoicesSourceText.text.Split(", ")
-            //         .ToList()
-            //         .SequenceEqual(item.Viewer.NikkeData.VoicesPath)
-            // );
         }
         #endregion
 

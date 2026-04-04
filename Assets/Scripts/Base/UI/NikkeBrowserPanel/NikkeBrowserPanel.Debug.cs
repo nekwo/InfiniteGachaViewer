@@ -91,10 +91,18 @@ namespace NikkeViewerEX.UI
 
                     foreach (string anim in pose.Animations)
                     {
-                        var animItem = new Label($"  {anim}");
+                        var animItem = new VisualElement();
+                        animItem.Add(new Label($"  {anim}"));
                         animItem.AddToClassList("debug-anim-item");
                         if (anim == pose.CurrentAnimation)
                             animItem.AddToClassList("debug-anim-current");
+                        
+                        // Make clickable to play animation
+                        animItem.AddManipulator(new Clickable(() =>
+                        {
+                            viewer.PlayAnimationByName(anim);
+                        }));
+                        
                         section.Add(animItem);
                     }
 

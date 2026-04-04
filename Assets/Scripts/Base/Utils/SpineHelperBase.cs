@@ -43,9 +43,6 @@ namespace NikkeViewerEX.Utils
         /// <returns>Midpoint.</returns>
         public static Vector3 GetMidpoint(Vector3 a, Vector3 b)
         {
-            // float x2 = a.x + b.x;
-            // float y2 = a.y + b.y;
-            // return new Vector3(x2, y2, 0) / 2;
             return (a + b) / 2f;
         }
 
@@ -57,12 +54,6 @@ namespace NikkeViewerEX.Utils
         /// <returns>The angle in degrees between the two vectors.</returns>
         public static float GetAngle(Vector3 a, Vector3 b)
         {
-            // Vector3 dir = l - r;
-            // dir = dir.normalized;
-            // float angle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
-            // angle = angle < 0 ? angle + 360 : angle;
-            // return angle;
-
             Vector3 direction = (a - b).normalized;
             float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
             return (angle + 360) % 360;

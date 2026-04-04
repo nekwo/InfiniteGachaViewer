@@ -156,7 +156,7 @@ namespace NikkeViewerEX.UI
                     addedLabel.style.display = DisplayStyle.None;
                 }
 
-                addBtn.clicked += () => AddCharacter(entry, addBtn, addedLabel, itemRoot);
+                addBtn.clicked += () => AddCharacter(entry, addBtn, addedLabel, itemRoot).Forget();
 
                 VisualElement thumbnailEl = item.Q("character-thumbnail");
                 if (!string.IsNullOrEmpty(thumbnailsFolder))

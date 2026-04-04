@@ -47,6 +47,9 @@ namespace NikkeViewerEX.Components
         [Range(0.1f, 3f)]
         float m_TransitionSpeed = 2f;
 
+        [SerializeField]
+        string m_ShaderName = "Universal Render Pipeline/Spine 4.1/Skeleton";
+
         [Header("UI")]
         [SerializeField]
         TextMeshPro m_NikkeNamePrefab;
@@ -117,13 +120,15 @@ namespace NikkeViewerEX.Components
 
         public override void TriggerSpawn() => SpawnNikke();
 
+        void SpawnNikke() => SpawnNikkeAsync().Forget();
+
         public override void EnsureNameText()
         {
             if (NikkeNameText == null)
                 NikkeNameText = CreateDisplayName(NikkeData.NikkeName);
         }
 
-        private async void SpawnNikke()
+        private async UniTaskVoid SpawnNikkeAsync()
         {
             try
             {
@@ -154,7 +159,7 @@ namespace NikkeViewerEX.Components
                         pose.AtlasPath,
                         pose.TexturesPath,
                         poseGO,
-                        Shader.Find("Universal Render Pipeline/Spine 4.1/Skeleton"),
+                        Shader.Find(m_ShaderName),
                         spineScale: 0.25f,
                         loop: true,
                         defaultAnimation: GetDefaultAnimation(pose.PoseType)
@@ -196,12 +201,9 @@ namespace NikkeViewerEX.Components
                 var active = ActiveSkeleton;
                 if (active != null)
                 {
-                    // If active pose is Aim, we need to set up aim blend on restart
                     if (NikkeData.ActivePose == NikkePoseType.Aim)
                         SetupAimBlend(active);
-                }
-                if (active != null)
-                {
+
                     Skins = active.Skeleton.Data.Skins?.Select(skin => skin.Name).ToArray();
                     TouchAnimations = active.Skeleton.Data.Animations.Items
                         .Take(active.Skeleton.Data.Animations.Count)
@@ -289,6 +291,13 @@ namespace NikkeViewerEX.Components
             var target = poseInstances[poseType];
             SetPoseVisible(target.go, true);
 
+            // Pin incoming collider to idle snapshot — the live mesh may still
+            // reflect the last transition animation frame and MeshCollider doesn't
+            // auto-rebake when Spine mutates the underlying Mesh data.
+            if (target.go.TryGetComponent(out MeshCollider targetMc)
+                && idleColliderMeshes.TryGetValue(poseType, out var targetIdleMesh))
+                targetMc.sharedMesh = targetIdleMesh;
+
             // Set up aim blend if entering Aim pose
             if (poseType == NikkePoseType.Aim)
                 SetupAimBlend(target.anim);
@@ -312,12 +321,6 @@ namespace NikkeViewerEX.Components
             var aimY = data.FindAnimation(m_AimYAnimation);
             if (aimX == null && aimY == null) return;
 
-            var sb = new System.Text.StringBuilder();
-            sb.AppendLine($"[{NikkeData.AssetName}] Bone Hierarchy:");
-            foreach (var bone in skel.Skeleton.Bones)
-                sb.AppendLine($"  {bone.Data.Name}");
-            Debug.Log(sb);
-
             aimBlendActive = true;
 
             var reticleGO = new GameObject("AimReticle", typeof(RectTransform));
@@ -326,25 +329,15 @@ namespace NikkeViewerEX.Components
             aimReticle.SetAsLastSibling();
             reticleGO.AddComponent<AimReticle>();
 
-            // Track 0: base idle (MixBlend.Replace by default)
-            // adds the additive first with out mixblend.add to esure it doesn't explode
-            // Track 1+: additive animations (MixBlend.Add adds on top of track 0's result)
-            var aimIdle = data.FindAnimation(m_AimDefaultAnimation);
-
-             // if (aimIdle != null)
-            //     skel.AnimationState.SetAnimation(1, aimIdle, true);
-
             if (aimX != null)
             {
                 aimXTrack = skel.AnimationState.SetAnimation(1, aimX, false);
-                //aimXTrack.MixBlend = Spine.MixBlend.Add;
                 aimXTrack.Alpha = 0.05f;
                 aimXTrack.TimeScale = 0;
             }
             if (aimY != null)
             {
                 aimYTrack = skel.AnimationState.SetAnimation(2, aimY, false);
-                //aimYTrack.MixBlend = Spine.MixBlend.Add;
                 aimYTrack.Alpha = 0.05f;
                 aimYTrack.TimeScale = 0;
             }
@@ -413,9 +406,6 @@ namespace NikkeViewerEX.Components
                     if (name.Contains("shadow", System.StringComparison.OrdinalIgnoreCase)) continue;
                     if (name == "@a_hair_") continue;
                     if (name.IndexOf("hair_0", System.StringComparison.OrdinalIgnoreCase) >= 0) continue;
-                    //if (name.IndexOf("hair_1", System.StringComparison.OrdinalIgnoreCase) >= 0) continue;
-                    //if (name.IndexOf("hair_2", System.StringComparison.OrdinalIgnoreCase) >= 0) continue;
-                    //if (name.IndexOf("hair_3", System.StringComparison.OrdinalIgnoreCase) >= 0) continue;
                     if (name.IndexOf("acc_1", System.StringComparison.OrdinalIgnoreCase) >= 0) continue;
                     if (registeredNames.Contains(name)) continue;
                     if (name.IndexOf(pattern.Keyword, System.StringComparison.OrdinalIgnoreCase) < 0) continue;
@@ -502,7 +492,7 @@ namespace NikkeViewerEX.Components
                 RectTransformUtility.ScreenPointToLocalPointInRectangle(
                     canvasRect,
                     mousePos,
-                    Camera.main,
+                    CachedCamera,
                     out Vector2 canvasPos
                 );
                 aimReticle.anchoredPosition = canvasPos;
@@ -573,14 +563,14 @@ namespace NikkeViewerEX.Components
                 transform.position.z
             );
 
-            Vector3 screenPosition = Camera.main.WorldToScreenPoint(worldPosition);
+            Vector3 screenPosition = CachedCamera.WorldToScreenPoint(worldPosition);
 
             // Convert screen position to Canvas space
             RectTransform canvasRect = tmp.canvas.GetComponent<RectTransform>();
             RectTransformUtility.ScreenPointToLocalPointInRectangle(
                 canvasRect,
                 screenPosition,
-                Camera.main,
+                CachedCamera,
                 out Vector2 canvasPosition
             );
 
@@ -591,7 +581,7 @@ namespace NikkeViewerEX.Components
         {
             if (!ctx.performed) return;
 
-            Ray ray = Camera.main.ScreenPointToRay(Mouse.current.position.ReadValue());
+            Ray ray = CachedCamera.ScreenPointToRay(Mouse.current.position.ReadValue());
             if (Physics.Raycast(ray, out RaycastHit hit))
             {
                 var viewer = hit.collider.GetComponentInParent<NikkeViewer>();
@@ -641,7 +631,7 @@ namespace NikkeViewerEX.Components
         {
             if (ctx.performed)
             {
-                Ray ray = Camera.main.ScreenPointToRay(Mouse.current.position.ReadValue());
+                Ray ray = CachedCamera.ScreenPointToRay(Mouse.current.position.ReadValue());
                 if (Physics.Raycast(ray, out RaycastHit hit))
                 {
                     var viewer = hit.collider.GetComponentInParent<NikkeViewer>();
