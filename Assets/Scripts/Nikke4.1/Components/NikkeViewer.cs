@@ -218,6 +218,12 @@ namespace NikkeViewerEX.Components
                         ToggleDisplayName(false);
                     }
                 }
+
+                if (Mathf.Approximately(NikkeData.Brightness, 1f) == false)
+                    ApplyBrightness(NikkeData.Brightness);
+
+                if (Mathf.Approximately(NikkeData.ShadowBrightness, 0f) == false)
+                    ApplyShadowBrightness(NikkeData.ShadowBrightness);
             }
             catch (Exception ex)
             {
@@ -522,6 +528,43 @@ namespace NikkeViewerEX.Components
                 });
             }
             return list;
+        }
+
+        static readonly int BrightnessPropertyId = Shader.PropertyToID("_Brightness");
+        static readonly int ShadowBrightnessPropertyId = Shader.PropertyToID("_ShadowBrightness");
+
+        public override void ApplyBrightness(float brightness)
+        {
+            foreach (var (_, (go, _)) in poseInstances)
+            {
+                if (go == null) continue;
+
+                if (go.TryGetComponent(out MeshRenderer renderer))
+                {
+                    foreach (var mat in renderer.materials)
+                    {
+                        if (mat.HasFloat(BrightnessPropertyId))
+                            mat.SetFloat(BrightnessPropertyId, brightness);
+                    }
+                }
+            }
+        }
+
+        public override void ApplyShadowBrightness(float shadowBrightness)
+        {
+            foreach (var (_, (go, _)) in poseInstances)
+            {
+                if (go == null) continue;
+
+                if (go.TryGetComponent(out MeshRenderer renderer))
+                {
+                    foreach (var mat in renderer.materials)
+                    {
+                        if (mat.HasFloat(ShadowBrightnessPropertyId))
+                            mat.SetFloat(ShadowBrightnessPropertyId, shadowBrightness);
+                    }
+                }
+            }
         }
 
         /// <summary>

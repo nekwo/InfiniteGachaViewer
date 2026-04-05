@@ -39,7 +39,10 @@ half4 frag(VertexOutput i) : SV_Target{
 	texColor.rgb *= texColor.a;
 	#endif
 
-	return (texColor * i.color);
+	half4 result = texColor * i.color;
+	result.rgb *= _Brightness;
+	result.rgb += _ShadowBrightness;
+	return result;
 }
 
 #endif

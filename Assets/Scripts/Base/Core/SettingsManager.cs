@@ -9,6 +9,7 @@ using NikkeViewerEX.Utils;
 using SimpleFileBrowser;
 using TMPro;
 using UnityEngine;
+using UnityEngine.Serialization;
 using UnityEngine.UI;
 
 namespace NikkeViewerEX.Core
@@ -21,39 +22,22 @@ namespace NikkeViewerEX.Core
     public class SettingsManager : MonoBehaviour
     {
         [Header("UI")]
-        /// <summary>
-        /// Background image input field.
-        /// </summary>
-        public TMP_InputField BackgroundImageInput;
-
-        /// <summary>
-        /// Background music input field.
-        /// </summary>
-        public TMP_InputField BackgroundMusicInput;
-
-        /// <summary>
-        /// Background music volume slider.
-        /// </summary>
-        public Slider BackgroundMusicVolumeSlider;
-
-        /// <summary>
-        /// Background music play/stop toggle.
-        /// </summary>
-        public Toggle BackgroundMusicStateToggle;
+        [SerializeField, FormerlySerializedAs("BackgroundImageInput")] TMP_InputField m_BackgroundImageInput;
+        [SerializeField, FormerlySerializedAs("BackgroundMusicInput")] TMP_InputField m_BackgroundMusicInput;
+        [SerializeField, FormerlySerializedAs("BackgroundMusicVolumeSlider")] Slider m_BackgroundMusicVolumeSlider;
+        [SerializeField, FormerlySerializedAs("BackgroundMusicStateToggle")] Toggle m_BackgroundMusicStateToggle;
 
         [Space]
-        /// <summary>
-        /// Background image.
-        /// </summary>
-        public Image BackgroundImage;
-
-        /// <summary>
-        /// Background music Audio Source.
-        /// </summary>
-        public AudioSource BackgroundMusicAudio;
+        [SerializeField, FormerlySerializedAs("BackgroundImage")] Image m_BackgroundImage;
+        [SerializeField, FormerlySerializedAs("BackgroundMusicAudio")] AudioSource m_BackgroundMusicAudio;
 
         [Space]
-        public TMP_Dropdown FPSDropdown;
+        [SerializeField, FormerlySerializedAs("FPSDropdown")] TMP_Dropdown m_FPSDropdown;
+
+        public TMP_InputField BackgroundImageInput => m_BackgroundImageInput;
+        public TMP_InputField BackgroundMusicInput => m_BackgroundMusicInput;
+        public Image BackgroundImage => m_BackgroundImage;
+        public AudioSource BackgroundMusicAudio => m_BackgroundMusicAudio;
 
         [Header("Settings")]
         /// <summary>
@@ -68,11 +52,8 @@ namespace NikkeViewerEX.Core
         [SerializeField]
         string m_CachedDataDirectoryName = "cache";
 
-        /// <summary>
-        /// List of supported audio files.
-        /// </summary>
-        /// <value></value>
-        public string[] SupportedAudioFiles = { ".mp3", ".ogg", ".wav", ".flac" };
+        [SerializeField, FormerlySerializedAs("SupportedAudioFiles")] string[] m_SupportedAudioFiles = { ".mp3", ".ogg", ".wav", ".flac" };
+        public string[] SupportedAudioFiles => m_SupportedAudioFiles;
 
         /// <summary>
         /// Settings data.
@@ -98,8 +79,8 @@ namespace NikkeViewerEX.Core
         private void Awake()
         {
             mainControl = GetComponent<MainControl>();
-            FPSDropdown.onValueChanged.AddListener(SetFrameRate);
-            BackgroundMusicStateToggle.onValueChanged.AddListener(TogglePauseBGM);
+            m_FPSDropdown.onValueChanged.AddListener(SetFrameRate);
+            m_BackgroundMusicStateToggle.onValueChanged.AddListener(TogglePauseBGM);
             AwakeAsync().Forget();
         }
 
@@ -110,8 +91,8 @@ namespace NikkeViewerEX.Core
 
         private void OnDestroy()
         {
-            FPSDropdown.onValueChanged.RemoveListener(SetFrameRate);
-            BackgroundMusicStateToggle.onValueChanged.RemoveListener(TogglePauseBGM);
+            m_FPSDropdown.onValueChanged.RemoveListener(SetFrameRate);
+            m_BackgroundMusicStateToggle.onValueChanged.RemoveListener(TogglePauseBGM);
             OnDestroyAsync().Forget();
         }
 
@@ -143,9 +124,9 @@ namespace NikkeViewerEX.Core
             mainControl.ToggleHideUI(NikkeSettings.HideUI);
 
             // Set framerate
-            for (int i = 0; i < FPSDropdown.options.Count; i++)
+            for (int i = 0; i < m_FPSDropdown.options.Count; i++)
             {
-                string dropdownValue = FPSDropdown.options[i].text;
+                string dropdownValue = m_FPSDropdown.options[i].text;
                 if (dropdownValue.Equals(NikkeSettings.FPS))
                     SetFrameRate(i);
             }
@@ -222,29 +203,27 @@ namespace NikkeViewerEX.Core
         /// <returns></returns>
         private async UniTask LoadBackgroundSettings()
         {
-            BackgroundImageInput.text = NikkeSettings.BackgroundImage;
-            BackgroundImage.transform.localScale = Vector3.one * NikkeSettings.BackgroundScale;
-            BackgroundImage.rectTransform.anchoredPosition = new Vector2(NikkeSettings.BackgroundPanX, NikkeSettings.BackgroundPanY);
-            BackgroundImage.sprite = !string.IsNullOrEmpty(NikkeSettings.BackgroundImage)
+            m_BackgroundImageInput.text = NikkeSettings.BackgroundImage;
+            m_BackgroundImage.transform.localScale = Vector3.one * NikkeSettings.BackgroundScale;
+            m_BackgroundImage.rectTransform.anchoredPosition = new Vector2(NikkeSettings.BackgroundPanX, NikkeSettings.BackgroundPanY);
+            m_BackgroundImage.sprite = !string.IsNullOrEmpty(NikkeSettings.BackgroundImage)
                 ? await LoadSprite(NikkeSettings.BackgroundImage)
                 : null;
 
-            BackgroundMusicInput.text = NikkeSettings.BackgroundMusic;
-            BackgroundMusicAudio.clip = !string.IsNullOrEmpty(NikkeSettings.BackgroundMusic)
+            m_BackgroundMusicInput.text = NikkeSettings.BackgroundMusic;
+            m_BackgroundMusicAudio.clip = !string.IsNullOrEmpty(NikkeSettings.BackgroundMusic)
                 ? await WebRequestHelper.GetAudioClip(NikkeSettings.BackgroundMusic)
                 : null;
-            BackgroundMusicAudio.loop = true;
+            m_BackgroundMusicAudio.loop = true;
 
-            BackgroundMusicVolumeSlider.value = BackgroundMusicAudio.volume =
+            m_BackgroundMusicVolumeSlider.value = m_BackgroundMusicAudio.volume =
                 NikkeSettings.BackgroundMusicVolume;
-            if (NikkeSettings.BackgroundMusicPlaying && BackgroundMusicAudio.clip != null)
+            if (NikkeSettings.BackgroundMusicPlaying && m_BackgroundMusicAudio.clip != null)
             {
-                BackgroundMusicAudio.Play();
+                m_BackgroundMusicAudio.Play();
             }
-            BackgroundMusicStateToggle.isOn = NikkeSettings.BackgroundMusicPlaying;
+            m_BackgroundMusicStateToggle.isOn = NikkeSettings.BackgroundMusicPlaying;
             TogglePauseBGM(NikkeSettings.BackgroundMusicPlaying);
-
-            // ApplySettings();
         }
         #endregion
 
@@ -254,29 +233,26 @@ namespace NikkeViewerEX.Core
         private async UniTaskVoid ApplySettingsAsync()
         {
             // Set background image
-            BackgroundImage.sprite = File.Exists(BackgroundImageInput.text)
-                ? await LoadSprite(BackgroundImageInput.text)
+            m_BackgroundImage.sprite = File.Exists(m_BackgroundImageInput.text)
+                ? await LoadSprite(m_BackgroundImageInput.text)
                 : null;
-            NikkeSettings.BackgroundImage = BackgroundImageInput.text;
-            BackgroundImage.transform.localScale = Vector3.one * NikkeSettings.BackgroundScale;
-            BackgroundImage.rectTransform.anchoredPosition = new Vector2(NikkeSettings.BackgroundPanX, NikkeSettings.BackgroundPanY);
+            NikkeSettings.BackgroundImage = m_BackgroundImageInput.text;
+            m_BackgroundImage.transform.localScale = Vector3.one * NikkeSettings.BackgroundScale;
+            m_BackgroundImage.rectTransform.anchoredPosition = new Vector2(NikkeSettings.BackgroundPanX, NikkeSettings.BackgroundPanY);
 
             // Set background music
             if (
-                File.Exists(BackgroundMusicInput.text)
-                && BackgroundMusicInput.text != NikkeSettings.BackgroundMusic
+                File.Exists(m_BackgroundMusicInput.text)
+                && m_BackgroundMusicInput.text != NikkeSettings.BackgroundMusic
             )
             {
-                NikkeSettings.BackgroundMusic = BackgroundMusicInput.text;
+                NikkeSettings.BackgroundMusic = m_BackgroundMusicInput.text;
                 NikkeSettings.BackgroundMusicPlaying = true;
-                BackgroundMusicAudio.clip = await WebRequestHelper.GetAudioClip(
+                m_BackgroundMusicAudio.clip = await WebRequestHelper.GetAudioClip(
                     NikkeSettings.BackgroundMusic
                 );
-                BackgroundMusicAudio.Play();
+                m_BackgroundMusicAudio.Play();
             }
-            // BackgroundMusicAudio.volume = BackgroundMusicVolumeSlider.value;
-            // NikkeSettings.BackgroundMusicVolume = BackgroundMusicVolumeSlider.value;
-            // NikkeSettings.BackgroundMusicPlaying = !BackgroundMusicStateToggle.isOn;
             Debug.Log("Settings applied.");
         }
 
@@ -355,17 +331,17 @@ namespace NikkeViewerEX.Core
         /// <param name="pause"></param>
         private void TogglePauseBGM(bool pause)
         {
-            BackgroundMusicStateToggle.isOn = pause;
-            BackgroundMusicStateToggle.targetGraphic.enabled = !pause;
+            m_BackgroundMusicStateToggle.isOn = pause;
+            m_BackgroundMusicStateToggle.targetGraphic.enabled = !pause;
             NikkeSettings.BackgroundMusicPlaying = pause;
             switch (pause)
             {
                 case true:
-                    BackgroundMusicAudio.UnPause();
+                    m_BackgroundMusicAudio.UnPause();
                     Debug.Log("BGM Resumed.");
                     break;
                 case false:
-                    BackgroundMusicAudio.Pause();
+                    m_BackgroundMusicAudio.Pause();
                     Debug.Log("BGM Paused.");
                     break;
             }
@@ -456,7 +432,7 @@ namespace NikkeViewerEX.Core
 
         private void SetFrameRate(int dropdownIndex)
         {
-            string dropdownValue = FPSDropdown.options[dropdownIndex].text;
+            string dropdownValue = m_FPSDropdown.options[dropdownIndex].text;
             int fps = dropdownValue.Equals("Unlimited") ? -1 : Convert.ToInt32(dropdownValue);
             NikkeSettings.FPS = dropdownValue;
             SetAppFrameRate(fps);

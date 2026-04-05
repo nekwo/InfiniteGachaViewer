@@ -195,6 +195,24 @@ namespace NikkeViewerEX.UI
                     }
                 });
 
+                // Brightness slider
+                var brightnessSlider = item.Q<Slider>("active-brightness-slider");
+                var brightnessValueLabel = item.Q<Label>("active-brightness-value");
+                float currentBrightness = nikke.Brightness;
+                brightnessSlider.SetValueWithoutNotify(currentBrightness);
+                brightnessValueLabel.text = $"{currentBrightness:F1}x";
+                brightnessSlider.RegisterValueChangedCallback(evt =>
+                {
+                    float val = evt.newValue;
+                    brightnessValueLabel.text = $"{val:F1}x";
+                    if (activeViewers.TryGetValue(instanceId, out var viewer))
+                    {
+                        viewer.NikkeData.Brightness = val;
+                        viewer.ApplyBrightness(val);
+                        SaveSettingsDebounced();
+                    }
+                });
+
                 // Show name toggle (inverted: checked = visible, unchecked = hidden)
                 var hideNameToggle = item.Q<Toggle>("toggle-checkbox");
                 hideNameToggle.SetValueWithoutNotify(!nikke.HideName);
@@ -262,6 +280,24 @@ namespace NikkeViewerEX.UI
                         viewer.transform.localScale = newScale;
                         viewer.NikkeData.Scale = newScale;
                         viewer.OnNikkeDataChanged();
+                        SaveSettingsDebounced();
+                    }
+                });
+
+                // Brightness slider
+                var brightnessSlider = item.Q<Slider>("active-brightness-slider");
+                var brightnessValueLabel = item.Q<Label>("active-brightness-value");
+                float currentBrightness = alChar.Brightness;
+                brightnessSlider.SetValueWithoutNotify(currentBrightness);
+                brightnessValueLabel.text = $"{currentBrightness:F1}x";
+                brightnessSlider.RegisterValueChangedCallback(evt =>
+                {
+                    float val = evt.newValue;
+                    brightnessValueLabel.text = $"{val:F1}x";
+                    if (activeViewers.TryGetValue(instanceId, out var viewer))
+                    {
+                        alChar.Brightness = val;
+                        viewer.ApplyBrightness(val);
                         SaveSettingsDebounced();
                     }
                 });

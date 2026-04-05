@@ -21,6 +21,7 @@ float _BlendAmount;
 float _Hue;
 float _Saturation;
 float _Brightness;
+float _ShadowBrightness;
 half4 _OverlayColor;
 
 half4 _EmissionColor;

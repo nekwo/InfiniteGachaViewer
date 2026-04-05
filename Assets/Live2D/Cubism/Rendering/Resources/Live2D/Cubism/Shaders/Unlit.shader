@@ -18,6 +18,9 @@ Shader "Live2D Cubism/Unlit"
         [PerRendererData] cubism_MultiplyColor("Multiply Color", Color) = (1.0, 1.0, 1.0, 1.0)
         [PerRendererData] cubism_ScreenColor("Screen Color", Color) = (0.0, 0.0, 0.0, 1.0)
 
+        // Brightness control.
+        [PerRendererData] _Brightness("Brightness", Float) = 1.0
+
         // Blend settings.
         _SrcColor("Source Color", Int) = 0
         _DstColor("Destination Color", Int) = 0
@@ -89,6 +92,7 @@ Shader "Live2D Cubism/Unlit"
             sampler2D _MainTex;
             fixed4 cubism_MultiplyColor;
             fixed4 cubism_ScreenColor;
+            float _Brightness;
 
 
             // Include Cubism specific shader variables.
@@ -125,6 +129,9 @@ Shader "Live2D Cubism/Unlit"
                 textureColor.rgb *= cubism_MultiplyColor.rgb;
                 // Screen
                 textureColor.rgb = (textureColor.rgb + cubism_ScreenColor.rgb) - (textureColor.rgb * cubism_ScreenColor.rgb);
+
+                // Apply brightness
+                textureColor.rgb *= _Brightness;
 
                 fixed4 OUT = textureColor * IN.color;
 

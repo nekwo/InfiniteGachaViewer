@@ -74,6 +74,8 @@ namespace NikkeViewerEX.Serialization
         public Vector2 Position;
         public bool Lock;
         public bool HideName = true;
+        public float Brightness = 1f;
+        public float ShadowBrightness = 0f;
     }
 
     [Serializable]
@@ -94,5 +96,7 @@ namespace NikkeViewerEX.Serialization
         public bool HideName = true;
         public List<NikkePose> Poses = new();
         public NikkePoseType ActivePose = NikkePoseType.Base;
+        public float Brightness = 1f;
+        public float ShadowBrightness = 0f;
     }
 }

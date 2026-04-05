@@ -11,6 +11,8 @@
 CBUFFER_START(UnityPerMaterial)
 float4 _MainTex_ST;
 half _Cutoff;
+half _Brightness;
+half _ShadowBrightness;
 CBUFFER_END
 
 sampler2D _MainTex;

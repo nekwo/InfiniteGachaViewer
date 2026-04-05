@@ -143,6 +143,33 @@ namespace NikkeViewerEX.Components
         /// </summary>
         public virtual void SetActivePose(Serialization.NikkePoseType poseType) { }
 
+        static readonly int BrightnessPropertyId = Shader.PropertyToID("_Brightness");
+        static readonly int ShadowBrightnessPropertyId = Shader.PropertyToID("_ShadowBrightness");
+
+        public virtual void ApplyBrightness(float brightness)
+        {
+            foreach (var r in GetComponentsInChildren<Renderer>(true))
+            {
+                foreach (var mat in r.materials)
+                {
+                    if (mat.HasFloat(BrightnessPropertyId))
+                        mat.SetFloat(BrightnessPropertyId, brightness);
+                }
+            }
+        }
+
+        public virtual void ApplyShadowBrightness(float shadowBrightness)
+        {
+            foreach (var r in GetComponentsInChildren<Renderer>(true))
+            {
+                foreach (var mat in r.materials)
+                {
+                    if (mat.HasFloat(ShadowBrightnessPropertyId))
+                        mat.SetFloat(ShadowBrightnessPropertyId, shadowBrightness);
+                }
+            }
+        }
+
         /// <summary>
         /// Debug information for a single pose's skeleton.
         /// </summary>

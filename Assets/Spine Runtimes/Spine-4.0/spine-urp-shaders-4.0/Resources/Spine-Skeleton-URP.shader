@@ -3,6 +3,8 @@ Shader "Universal Render Pipeline/Spine 4.0/Skeleton" {
 		_Cutoff("Shadow alpha cutoff", Range(0,1)) = 0.1
 		[NoScaleOffset] _MainTex("Main Texture", 2D) = "black" {}
 		[Toggle(_STRAIGHT_ALPHA_INPUT)] _StraightAlphaInput("Straight Alpha Texture", Int) = 0
+		_Brightness("Brightness", Range(0.5, 3)) = 1.0
+		_ShadowBrightness("Shadow Brightness", Range(0, 1)) = 0.0
 		[HideInInspector] _StencilRef("Stencil Reference", Float) = 1.0
 		[Enum(UnityEngine.Rendering.CompareFunction)] _StencilComp("Stencil Comparison", Float) = 8 // Set to Always as default
 	}

@@ -50,13 +50,16 @@ VertexOutput vert(appdata v) {
 half4 frag(VertexOutput i) : SV_Target{
 	float4 texColor = tex2D(_MainTex, i.uv0);
 #if defined(_TINT_BLACK_ON)
-	return fragTintedColor(texColor, i.darkColor, i.color, _Color.a, _Black.a);
+	half4 result = fragTintedColor(texColor, i.darkColor, i.color, _Color.a, _Black.a);
 #else
 	#if defined(_STRAIGHT_ALPHA_INPUT)
 	texColor.rgb *= texColor.a;
 	#endif
-	return (texColor * i.color);
-#endif
+	half4 result = texColor * i.color;
+	#endif
+	result.rgb *= _Brightness;
+	result.rgb += _ShadowBrightness;
+	return result;
 }
 
 #endif

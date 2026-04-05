@@ -326,6 +326,7 @@ inline fixed4 adjustColor(fixed4 color)
 	hsv.z *= _Brightness;
 
 	color.rgb = hsv2rgb(hsv);
+	color.rgb += _ShadowBrightness;
 
 	return color;
 }

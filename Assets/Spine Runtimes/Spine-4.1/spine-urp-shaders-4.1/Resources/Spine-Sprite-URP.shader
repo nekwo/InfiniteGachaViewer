@@ -31,6 +31,7 @@ Shader "Universal Render Pipeline/Spine 4.1/Sprite"
 		_Hue("Hue", Range(-0.5,0.5)) = 0.0
 		_Saturation("Saturation", Range(0,2)) = 1.0
 		_Brightness("Brightness", Range(0,2)) = 1.0
+		_ShadowBrightness("Shadow Brightness", Range(0, 1)) = 0.0
 
 		_RimPower("Rim Power", Float) = 2.0
 		_RimColor("Rim Color", Color) = (1,1,1,1)

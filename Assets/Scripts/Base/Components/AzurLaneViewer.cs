@@ -5,6 +5,7 @@ using System.Linq;
 using Cysharp.Threading.Tasks;
 using Live2D.Cubism.Core;
 using Live2D.Cubism.Framework;
+using Live2D.Cubism.Framework.LookAt;
 using Live2D.Cubism.Framework.Motion;
 using Live2D.Cubism.Framework.Raycasting;
 using NikkeViewerEX.Core;
@@ -179,12 +180,32 @@ namespace NikkeViewerEX.Components
 
             // Setup animation system
             SetupAnimation();
-            
+
+            // Setup mouse look-at tracking
+            SetupLookAt();
+
             // Add box collider for easier dragging
             AddBoxCollider();
 
             // Floating name label
             EnsureNameText();
+
+            if (Mathf.Approximately(AlCharacterData.Brightness, 1f) == false)
+                ApplyBrightness(AlCharacterData.Brightness);
+        }
+
+        static readonly int BrightnessPropertyId = Shader.PropertyToID("_Brightness");
+
+        public override void ApplyBrightness(float brightness)
+        {
+            foreach (var r in GetComponentsInChildren<Renderer>(true))
+            {
+                foreach (var mat in r.materials)
+                {
+                    if (mat.HasFloat(BrightnessPropertyId))
+                        mat.SetFloat(BrightnessPropertyId, brightness);
+                }
+            }
         }
 
         void LoadAnimationOverrides()
@@ -327,6 +348,67 @@ namespace NikkeViewerEX.Components
             }
         }
         
+        /// <summary>Standard Live2D parameter IDs used for look-at tracking.</summary>
+        static readonly (string id, CubismLookAxis axis, float factor)[] LookAtParams = new[]
+        {
+            ("ParamAngleX",     CubismLookAxis.X, 30f),
+            ("ParamAngleY",     CubismLookAxis.Y, 30f),
+            ("ParamBodyAngleX", CubismLookAxis.X, 10f),
+            ("ParamEyeBallX",   CubismLookAxis.X, 1f),
+            ("ParamEyeBallY",   CubismLookAxis.Y, 1f),
+        };
+
+        void SetupLookAt()
+        {
+            // Log all parameter IDs on the model for debugging
+            var allIds = new List<string>();
+            foreach (var p in cubismModel.Parameters) allIds.Add(p.Id);
+            Debug.Log($"[AzurLaneViewer] All model parameters: {string.Join(", ", allIds)}");
+
+            // Add CubismLookParameter to each matching parameter on the model
+            bool anyFound = false;
+            foreach (var param in cubismModel.Parameters)
+            {
+                foreach (var (id, axis, factor) in LookAtParams)
+                {
+                    if (param.Id == id)
+                    {
+                        var lookParam = param.gameObject.AddComponent<CubismLookParameter>();
+                        lookParam.Axis = axis;
+                        lookParam.Factor = factor;
+                        anyFound = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!anyFound)
+            {
+                Debug.Log("[AzurLaneViewer] No look-at parameters found on model, skipping look-at setup");
+                return;
+            }
+
+            // Create the mouse look target
+            var targetGo = new GameObject("MouseLookTarget");
+            targetGo.transform.SetParent(cubismModel.transform, false);
+            var lookTarget = targetGo.AddComponent<CubismMouseLookTarget>();
+
+            // Add and configure the look controller
+            var lookController = cubismModel.gameObject.AddComponent<CubismLookController>();
+            lookController.BlendMode = CubismParameterBlendMode.Additive;
+            lookController.Target = lookTarget;
+            lookController.Damping = 0.15f;
+
+            lookController.Refresh();
+
+            // Re-refresh the update controller so it picks up the new CubismLookController
+            var updateController = cubismModel.GetComponent<CubismUpdateController>();
+            if (updateController != null)
+                updateController.Refresh();
+
+            Debug.Log("[AzurLaneViewer] Look-at mouse tracking enabled");
+        }
+
         void OnMotionAnimationEnd(int instanceId)
         {
             // Check if this was a touch motion (layer 1)

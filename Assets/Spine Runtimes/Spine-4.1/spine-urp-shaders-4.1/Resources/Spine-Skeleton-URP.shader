@@ -7,6 +7,8 @@ Shader "Universal Render Pipeline/Spine 4.1/Skeleton" {
 		[MaterialToggle(_TINT_BLACK_ON)]  _TintBlack("Tint Black", Float) = 0
 		_Color("    Light Color", Color) = (1,1,1,1)
 		_Black("    Dark Color", Color) = (0,0,0,0)
+		_Brightness("Brightness", Range(0.5, 3)) = 1.0
+		_ShadowBrightness("Shadow Brightness", Range(0, 1)) = 0.0
 		[HideInInspector] _StencilRef("Stencil Reference", Float) = 1.0
 		[Enum(UnityEngine.Rendering.CompareFunction)] _StencilComp("Stencil Comparison", Float) = 8 // Set to Always as default
 	}

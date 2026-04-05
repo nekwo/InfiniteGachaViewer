@@ -20,6 +20,11 @@
             <Slider class="active-scale-slider" name="active-scale-slider"
                 low-value="0.2" high-value="5" value="1" />
             <Label class="active-scale-value" name="active-scale-value" text="1.0x" />
+
+            <Label class="active-control-label" text="Brightness" />
+            <Slider class="active-scale-slider" name="active-brightness-slider"
+                low-value="0.5" high-value="3" value="1" />
+            <Label class="active-scale-value" name="active-brightness-value" text="1.0x" />
             <VisualElement class="active-hide-name-toggle" name="active-hide-name-toggle">
                 <Label class="toggle-label" text="Show name" />
                 <Toggle class="toggle-checkbox" name="toggle-checkbox" />
