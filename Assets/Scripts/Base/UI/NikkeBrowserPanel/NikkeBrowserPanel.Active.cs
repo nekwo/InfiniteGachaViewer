@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Cysharp.Threading.Tasks;
+using NikkeViewerEX.Components;
 using NikkeViewerEX.Serialization;
 using NikkeViewerEX.Utils;
 using UnityEngine;
@@ -259,7 +260,7 @@ namespace NikkeViewerEX.UI
                     : alChar.DisplayName;
                 item.Q<Label>("character-name").text = displayName;
                 item.Q<Label>("character-id").text = alChar.AssetName;
-                item.Q<Label>("character-version").text = "Live2D";
+                item.Q<Label>("character-version").text = alChar.IsSpine ? "Spine" : "Live2D";
                 item.Q("pose-buttons").style.display = DisplayStyle.None;
 
                 int instanceId = alChar.InstanceId;
@@ -298,6 +299,28 @@ namespace NikkeViewerEX.UI
                     {
                         alChar.Brightness = val;
                         viewer.ApplyBrightness(val);
+                        SaveSettingsDebounced();
+                    }
+                });
+
+                // Collider scale slider (Live2D only)
+                var colliderRow = item.Q("collider-scale-row");
+                if (!alChar.IsSpine && !string.Equals(alChar.Type, "static", System.StringComparison.OrdinalIgnoreCase))
+                    colliderRow.style.display = DisplayStyle.Flex;
+                var colliderSlider = item.Q<Slider>("active-collider-slider");
+                var colliderValueLabel = item.Q<Label>("active-collider-value");
+                float currentColliderScale = alChar.ColliderScale;
+                colliderSlider.SetValueWithoutNotify(currentColliderScale);
+                colliderValueLabel.text = $"{currentColliderScale:F1}x";
+                colliderSlider.RegisterValueChangedCallback(evt =>
+                {
+                    float val = evt.newValue;
+                    colliderValueLabel.text = $"{val:F1}x";
+                    if (activeViewers.TryGetValue(instanceId, out var viewer)
+                        && viewer is AzurLaneViewer alViewer)
+                    {
+                        alChar.ColliderScale = val;
+                        alViewer.ApplyColliderScale(val);
                         SaveSettingsDebounced();
                     }
                 });

@@ -654,47 +654,43 @@ namespace NikkeViewerEX.Components
 
         void Interact(InputAction.CallbackContext ctx)
         {
-            if (ctx.performed)
+            if (!ctx.performed || InputManager.IsPointerOverUI())
+                return;
+
+            Ray ray = CachedCamera.ScreenPointToRay(Mouse.current.position.ReadValue());
+            if (!Physics.Raycast(ray, out RaycastHit hit))
+                return;
+
+            var viewer = hit.collider.GetComponentInParent<NikkeViewer>();
+            if (viewer != this)
+                return;
+
+            var skel = ActiveSkeleton;
+            if (skel == null)
+                return;
+
+            string animName = TouchAnimations.Count > 0
+                ? TouchAnimations[TouchVoiceIndex % TouchAnimations.Count]
+                : m_TouchAnimation;
+
+            Spine.Animation touchAnimation = skel
+                .skeletonDataAsset.GetAnimationStateData()
+                .SkeletonData.FindAnimation(animName);
+
+            if (touchAnimation == null)
+                return;
+
+            if (TouchVoices.Count > 0)
             {
-                Ray ray = CachedCamera.ScreenPointToRay(Mouse.current.position.ReadValue());
-                if (Physics.Raycast(ray, out RaycastHit hit))
-                {
-                    var viewer = hit.collider.GetComponentInParent<NikkeViewer>();
-                    if (viewer != null && viewer == this)
-                    {
-                        var skel = ActiveSkeleton;
-                        if (skel == null) return;
-
-                        string animName = TouchAnimations.Count > 0
-                            ? TouchAnimations[TouchVoiceIndex % TouchAnimations.Count]
-                            : m_TouchAnimation;
-
-                        Spine.Animation touchAnimation = skel
-                            .skeletonDataAsset.GetAnimationStateData()
-                            .SkeletonData.FindAnimation(animName);
-
-                        if (touchAnimation != null)
-                        {
-                            if (TouchVoices.Count > 0)
-                            {
-                                NikkeAudioSource.Stop();
-                                NikkeAudioSource.clip = TouchVoices[TouchVoiceIndex % TouchVoices.Count];
-                                NikkeAudioSource.Play();
-                            }
-
-                            TouchVoiceIndex++;
-
-                            skel.AnimationState.SetAnimation(0, animName, false);
-                            skel.AnimationState.AddAnimation(
-                                0,
-                                m_DefaultAnimation,
-                                true,
-                                0
-                            );
-                        }
-                    }
-                }
+                NikkeAudioSource.Stop();
+                NikkeAudioSource.clip = TouchVoices[TouchVoiceIndex % TouchVoices.Count];
+                NikkeAudioSource.Play();
             }
+
+            TouchVoiceIndex++;
+
+            skel.AnimationState.SetAnimation(0, animName, false);
+            skel.AnimationState.AddAnimation(0, m_DefaultAnimation, true, 0);
         }
     }
 }

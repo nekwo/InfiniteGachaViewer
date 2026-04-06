@@ -9,6 +9,7 @@ namespace NikkeViewerEX.Serialization
         public string name;
         public string id;
         public float version;
+        public string type;
 
         /// <summary>
         /// Returns the effective Spine version string.
@@ -16,6 +17,9 @@ namespace NikkeViewerEX.Serialization
         /// </summary>
         public string VersionLabel =>
             version >= 4.09f ? version.ToString("0.0") : "4.0";
+
+        /// <summary>True if this entry represents a Spine model rather than Live2D.</summary>
+        public bool IsSpine => string.Equals(type, "spine", StringComparison.OrdinalIgnoreCase);
     }
 
     [Serializable]

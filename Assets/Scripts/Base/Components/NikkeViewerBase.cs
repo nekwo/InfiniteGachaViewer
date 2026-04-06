@@ -6,6 +6,7 @@ using NikkeViewerEX.Serialization;
 using NikkeViewerEX.Utils;
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 
 namespace NikkeViewerEX.Components
@@ -20,6 +21,8 @@ namespace NikkeViewerEX.Components
         /// </summary>
         /// <returns></returns>
         public Nikke NikkeData = new();
+        /// <summary>Azur Lane character data (used by AL viewers, both L2D and Spine).</summary>
+        public virtual AzurLaneCharacter AlCharacterData { get; set; }
         public string[] Skins { get; set; }
         public static NikkeViewerBase Possessed { get; set; }
 
@@ -312,15 +315,15 @@ namespace NikkeViewerEX.Components
 
         private async UniTaskVoid DragNikkeAsync(InputAction.CallbackContext ctx)
         {
-            if (!NikkeData.Lock)
+            if (NikkeData.Lock || InputManager.IsPointerOverUI())
+                return;
+                
+            Ray ray = CachedCamera.ScreenPointToRay(Mouse.current.position.ReadValue());
+            if (Physics.Raycast(ray, out RaycastHit hit))
             {
-                Ray ray = CachedCamera.ScreenPointToRay(Mouse.current.position.ReadValue());
-                if (Physics.Raycast(ray, out RaycastHit hit))
-                {
-                    var viewer = hit.collider.GetComponentInParent<NikkeViewerBase>();
-                    if (viewer != null && viewer == this)
-                        await DragUpdate(viewer.gameObject);
-                }
+                var viewer = hit.collider.GetComponentInParent<NikkeViewerBase>();
+                if (viewer != null && viewer == this)
+                    await DragUpdate(viewer.gameObject);
             }
         }
 

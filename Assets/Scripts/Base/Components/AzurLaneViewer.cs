@@ -43,7 +43,7 @@ namespace NikkeViewerEX.Components
         TextMeshPro m_NamePrefab;
 
         /// <summary>AL-specific character data. Set by NikkeBrowserPanel before TriggerSpawn.</summary>
-        public AzurLaneCharacter AlCharacterData = new();
+        public override AzurLaneCharacter AlCharacterData { get; set; } = new();
 
         AnimationOverrideJson animationOverrideJson;
         Dictionary<string, List<AnimationClip>> motionOverridesMap = new();
@@ -117,6 +117,11 @@ namespace NikkeViewerEX.Components
 
         void SyncParameterOverridesToData()
         {
+            AlCharacterData.ParameterOverridesEnabled = ParameterOverridesEnabled;
+            AlCharacterData.PhysicsOverridesEnabled = PhysicsOverridesEnabled;
+            AlCharacterData.PartOverridesEnabled = PartOverridesEnabled;
+            AlCharacterData.DrawableOverridesEnabled = DrawableOverridesEnabled;
+
             AlCharacterData.ParameterOverrides.Clear();
             foreach (var kvp in parameterOverrides)
             {
@@ -280,12 +285,19 @@ namespace NikkeViewerEX.Components
 
             // Add box collider for easier dragging
             AddBoxCollider();
+            ApplyColliderScale(AlCharacterData.ColliderScale);
 
             // Floating name label
             EnsureNameText();
 
             if (Mathf.Approximately(AlCharacterData.Brightness, 1f) == false)
                 ApplyBrightness(AlCharacterData.Brightness);
+
+            // Restore persisted override enable flags
+            ParameterOverridesEnabled = AlCharacterData.ParameterOverridesEnabled;
+            PhysicsOverridesEnabled = AlCharacterData.PhysicsOverridesEnabled;
+            PartOverridesEnabled = AlCharacterData.PartOverridesEnabled;
+            DrawableOverridesEnabled = AlCharacterData.DrawableOverridesEnabled;
 
             // Restore persisted parameter overrides
             foreach (var po in AlCharacterData.ParameterOverrides)
@@ -689,6 +701,17 @@ namespace NikkeViewerEX.Components
             boxCollider.center = Vector3.zero;
             // Make it much larger for easier clicking
             boxCollider.size = new Vector3(modelWidth * 1f, modelHeight * 1f, 1f);
+            baseColliderSize = boxCollider.size;
+        }
+
+        Vector3 baseColliderSize;
+
+        public void ApplyColliderScale(float scale)
+        {
+            if (cubismModel == null) return;
+            var boxCollider = cubismModel.GetComponent<BoxCollider>();
+            if (boxCollider == null) return;
+            boxCollider.size = baseColliderSize * scale;
         }
 
         // ── Sorting ───────────────────────────────────────────────────────────────────
@@ -712,6 +735,7 @@ namespace NikkeViewerEX.Components
         void OnPointerClick(InputAction.CallbackContext ctx)
         {
             if (cubismModel == null || !Application.isPlaying) return;
+            if (InputManager.IsPointerOverUI()) return;
 
             // Raycast to detect which body part was clicked
             Camera cam = CachedCamera;
@@ -774,7 +798,9 @@ namespace NikkeViewerEX.Components
             // Play touch voice if available
             if (TouchVoices.Count > 0)
             {
-                NikkeAudioSource.PlayOneShot(TouchVoices[TouchVoiceIndex % TouchVoices.Count]);
+                NikkeAudioSource.Stop();
+                NikkeAudioSource.clip = TouchVoices[TouchVoiceIndex % TouchVoices.Count];
+                NikkeAudioSource.Play();
                 TouchVoiceIndex++;
             }
 

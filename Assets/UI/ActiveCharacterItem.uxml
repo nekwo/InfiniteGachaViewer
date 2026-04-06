@@ -14,17 +14,32 @@
             <Button class="remove-button" name="remove-button" text="Remove" />
         </VisualElement>
 
-        <!-- Controls row: scale slider + hide name toggle + lock toggle -->
+        <!-- Scale row -->
         <VisualElement class="active-item-controls">
             <Label class="active-control-label" text="Scale" />
             <Slider class="active-scale-slider" name="active-scale-slider"
                 low-value="0.2" high-value="5" value="1" />
             <Label class="active-scale-value" name="active-scale-value" text="1.0x" />
+        </VisualElement>
 
+        <!-- Brightness row -->
+        <VisualElement class="active-item-controls">
             <Label class="active-control-label" text="Brightness" />
             <Slider class="active-scale-slider" name="active-brightness-slider"
                 low-value="0.5" high-value="3" value="1" />
             <Label class="active-scale-value" name="active-brightness-value" text="1.0x" />
+        </VisualElement>
+
+        <!-- Collider scale row (hidden by default, shown for Azur Lane) -->
+        <VisualElement class="active-item-controls" name="collider-scale-row" style="display: none;">
+            <Label class="active-control-label" text="Grab Size" />
+            <Slider class="active-scale-slider" name="active-collider-slider"
+                low-value="0.1" high-value="2" value="1" />
+            <Label class="active-scale-value" name="active-collider-value" text="1.0x" />
+        </VisualElement>
+
+        <!-- Toggles row -->
+        <VisualElement class="active-item-controls">
             <VisualElement class="active-hide-name-toggle" name="active-hide-name-toggle">
                 <Label class="toggle-label" text="Show name" />
                 <Toggle class="toggle-checkbox" name="toggle-checkbox" />

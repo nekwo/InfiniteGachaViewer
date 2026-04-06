@@ -227,15 +227,27 @@ namespace NikkeViewerEX.UI
             {
                 try
                 {
-                    AzurLaneViewer alViewer = mainControl.InstantiateAzurLaneViewer();
-                    if (alViewer == null) continue;
-
                     var character = JsonUtility.FromJson<AzurLaneCharacter>(JsonUtility.ToJson(savedAlChar));
-                    alViewer.AlCharacterData = character;
-                    alViewer.NikkeData.InstanceId = character.InstanceId;
-                    alViewer.name = character.DisplayName;
-                    alViewer.gameObject.transform.position = character.Position;
-                    alViewer.gameObject.transform.localScale = character.Scale;
+                    NikkeViewerBase viewerBase;
+
+                    if (character.IsSpine)
+                    {
+                        viewerBase = mainControl.InstantiateAzurLaneSpineViewer();
+                        if (viewerBase == null) continue;
+                        viewerBase.AlCharacterData = character;
+                    }
+                    else
+                    {
+                        AzurLaneViewer alViewer = mainControl.InstantiateAzurLaneViewer();
+                        if (alViewer == null) continue;
+                        alViewer.AlCharacterData = character;
+                        viewerBase = alViewer;
+                    }
+
+                    viewerBase.NikkeData.InstanceId = character.InstanceId;
+                    viewerBase.name = character.DisplayName;
+                    viewerBase.gameObject.transform.position = character.Position;
+                    viewerBase.gameObject.transform.localScale = character.Scale;
 
                     if (character.VoicesPath.Count > 0)
                     {
@@ -245,11 +257,11 @@ namespace NikkeViewerEX.UI
                             var clip = await WebRequestHelper.GetAudioClip(path);
                             if (clip != null) clips.Add(clip);
                         }
-                        alViewer.TouchVoices = clips;
+                        viewerBase.TouchVoices = clips;
                     }
 
-                    alViewer.TriggerSpawn();
-                    activeViewers[character.InstanceId] = alViewer;
+                    viewerBase.TriggerSpawn();
+                    activeViewers[character.InstanceId] = viewerBase;
                     newAlList.Add(character);
                 }
                 catch (Exception ex)

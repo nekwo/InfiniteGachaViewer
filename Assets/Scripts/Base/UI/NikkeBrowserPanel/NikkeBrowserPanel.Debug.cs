@@ -186,6 +186,8 @@ namespace NikkeViewerEX.UI
                     physEnableToggle.RegisterValueChangedCallback(evt =>
                     {
                         viewerForPhysToggle.PhysicsOverridesEnabled = evt.newValue;
+                        viewerForPhysToggle.OnNikkeDataChanged();
+                        SaveSettingsDebounced();
                     });
 
                     physHeaderRow.Add(physCollapseBtn);
@@ -309,6 +311,8 @@ namespace NikkeViewerEX.UI
                     partEnableToggle.RegisterValueChangedCallback(evt =>
                     {
                         viewerForPartToggle.PartOverridesEnabled = evt.newValue;
+                        viewerForPartToggle.OnNikkeDataChanged();
+                        SaveSettingsDebounced();
                     });
 
                     partHeaderRow.Add(partCollapseBtn);
@@ -433,6 +437,8 @@ namespace NikkeViewerEX.UI
                     drawEnableToggle.RegisterValueChangedCallback(evt =>
                     {
                         viewerForDrawToggle.DrawableOverridesEnabled = evt.newValue;
+                        viewerForDrawToggle.OnNikkeDataChanged();
+                        SaveSettingsDebounced();
                     });
 
                     drawHeaderRow.Add(drawCollapseBtn);
@@ -610,6 +616,8 @@ namespace NikkeViewerEX.UI
                     paramEnableToggle.RegisterValueChangedCallback(evt =>
                     {
                         viewerForParamToggle.ParameterOverridesEnabled = evt.newValue;
+                        viewerForParamToggle.OnNikkeDataChanged();
+                        SaveSettingsDebounced();
                     });
 
                     paramHeaderRow.Add(collapseBtn);

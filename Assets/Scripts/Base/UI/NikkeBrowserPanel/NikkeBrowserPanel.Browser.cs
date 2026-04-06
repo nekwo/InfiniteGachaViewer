@@ -24,9 +24,11 @@ namespace NikkeViewerEX.UI
         VisualElement browserEmpty;
         Button filterHasAssetsBtn;
         Button filterFullBtn;
+        Button filterFavoritesBtn;
 
         bool filterHasAssets = true;
         bool filterFull = true;
+        bool filterFavorites = false;
 
         readonly List<(VisualElement element, NikkeDatabaseEntry entry)> browserItems = new();
 
@@ -43,6 +45,7 @@ namespace NikkeViewerEX.UI
             browserEmpty = root.Q("browser-empty");
             filterHasAssetsBtn = root.Q<Button>("filter-has-assets");
             filterFullBtn = root.Q<Button>("filter-full");
+            filterFavoritesBtn = root.Q<Button>("filter-favorites");
         }
 
         void BindBrowserEvents()
@@ -53,6 +56,7 @@ namespace NikkeViewerEX.UI
             searchInput.RegisterValueChangedCallback(evt => ApplyBrowserFilters());
             filterHasAssetsBtn.clicked += ToggleFilterHasAssets;
             filterFullBtn.clicked += ToggleFilterFull;
+            filterFavoritesBtn.clicked += ToggleFilterFavorites;
         }
 
         void UnbindBrowserEvents()
@@ -63,6 +67,7 @@ namespace NikkeViewerEX.UI
             searchInput.UnregisterValueChangedCallback(evt => ApplyBrowserFilters());
             filterHasAssetsBtn.clicked -= ToggleFilterHasAssets;
             filterFullBtn.clicked -= ToggleFilterFull;
+            filterFavoritesBtn.clicked -= ToggleFilterFavorites;
         }
 
         void SwitchBrowserSubTab(int index)
@@ -82,6 +87,7 @@ namespace NikkeViewerEX.UI
                 case 1:
                     subTabAzurLaneBtn.AddToClassList("sub-tab-active");
                     subContentAzurLane.AddToClassList("sub-tab-visible");
+                    ApplyAlFilters();
                     break;
             }
         }
@@ -98,6 +104,36 @@ namespace NikkeViewerEX.UI
             filterFull = !filterFull;
             filterFullBtn.EnableInClassList("filter-active", filterFull);
             ApplyBrowserFilters();
+        }
+
+        void ToggleFilterFavorites()
+        {
+            filterFavorites = !filterFavorites;
+            filterFavoritesBtn.EnableInClassList("filter-active", filterFavorites);
+            ApplyBrowserFilters();
+        }
+
+        bool IsFavorite(string characterId) =>
+            settingsManager.NikkeSettings.Favorites.Contains(characterId);
+
+        void ToggleFavorite(string characterId, Button heartBtn)
+        {
+            var favorites = settingsManager.NikkeSettings.Favorites;
+            if (favorites.Contains(characterId))
+            {
+                favorites.Remove(characterId);
+                heartBtn.RemoveFromClassList("favorited");
+                heartBtn.text = "\u2661"; // empty heart
+            }
+            else
+            {
+                favorites.Add(characterId);
+                heartBtn.AddToClassList("favorited");
+                heartBtn.text = "\u2665"; // filled heart
+            }
+            SaveSettingsDebounced();
+            if (filterFavorites) ApplyBrowserFilters();
+            if (alFilterFavorites) ApplyAlFilters();
         }
 
         void ApplyBrowserFilters()
@@ -158,6 +194,13 @@ namespace NikkeViewerEX.UI
 
                 addBtn.clicked += () => AddCharacter(entry, addBtn, addedLabel, itemRoot).Forget();
 
+                // Favorite heart button
+                Button heartBtn = item.Q<Button>("favorite-button");
+                bool isFav = IsFavorite(entry.id);
+                heartBtn.text = isFav ? "\u2665" : "\u2661";
+                heartBtn.EnableInClassList("favorited", isFav);
+                heartBtn.clicked += () => ToggleFavorite(entry.id, heartBtn);
+
                 VisualElement thumbnailEl = item.Q("character-thumbnail");
                 if (!string.IsNullOrEmpty(thumbnailsFolder))
                     LoadThumbnail(thumbnailEl, thumbnailsFolder, entry.id).Forget();
@@ -174,6 +217,42 @@ namespace NikkeViewerEX.UI
         async UniTask LoadThumbnail(VisualElement thumbnailEl, string thumbnailsFolder, string characterId)
         {
             string path = NikkeViewerEX.Utils.CharacterAssetResolver.FindThumbnail(thumbnailsFolder, characterId);
+            if (path == null)
+            {
+                thumbnailEl.AddToClassList("thumbnail-missing");
+                return;
+            }
+
+            try
+            {
+                byte[] data = await File.ReadAllBytesAsync(path);
+                Texture2D tex = new(2, 2);
+                tex.LoadImage(data);
+                tex.name = characterId;
+                thumbnailEl.style.backgroundImage = new StyleBackground(tex);
+                thumbnailEl.RemoveFromClassList("thumbnail-missing");
+            }
+            catch (Exception ex)
+            {
+                thumbnailEl.AddToClassList("thumbnail-missing");
+                Debug.LogWarning($"Could not load thumbnail for {characterId}: {ex.Message}");
+            }
+        }
+
+        async UniTask LoadThumbnailWithFallback(VisualElement thumbnailEl, string primaryFolder, string fallbackFolder, string characterId)
+        {
+            string path = NikkeViewerEX.Utils.CharacterAssetResolver.FindThumbnail(primaryFolder, characterId);
+
+            // For static entries, also try without _static suffix
+            if (path == null && characterId.EndsWith("_static"))
+            {
+                string baseId = characterId.Substring(0, characterId.Length - "_static".Length);
+                path = NikkeViewerEX.Utils.CharacterAssetResolver.FindThumbnail(primaryFolder, baseId);
+            }
+
+            if (path == null && !string.IsNullOrEmpty(fallbackFolder))
+                path = NikkeViewerEX.Utils.CharacterAssetResolver.FindThumbnail(fallbackFolder, characterId);
+
             if (path == null)
             {
                 thumbnailEl.AddToClassList("thumbnail-missing");
@@ -218,11 +297,14 @@ namespace NikkeViewerEX.UI
                         match = false;
                 }
 
+                if (match && filterFavorites && !IsFavorite(entry.id))
+                    match = false;
+
                 element.style.display = match ? DisplayStyle.Flex : DisplayStyle.None;
                 if (match) visible++;
             }
 
-            bool hasActiveFilter = !string.IsNullOrEmpty(filter) || filterHasAssets || filterFull;
+            bool hasActiveFilter = !string.IsNullOrEmpty(filter) || filterHasAssets || filterFull || filterFavorites;
             browserCount.text = hasActiveFilter
                 ? $"{visible} of {browserItems.Count} characters"
                 : $"{browserItems.Count} characters available";

@@ -16,6 +16,11 @@ namespace NikkeViewerEX.UI
         TextField bgmPathInput;
         TextField alJsonPathInput;
         TextField alAssetsFolderInput;
+        TextField staticJsonPathInput;
+        TextField staticAssetsFolderInput;
+        TextField staticThumbnailsFolderInput;
+        TextField voiceMappingJsonInput;
+        TextField voiceFilesFolderInput;
         Button loadButton;
         Label statusText;
 
@@ -28,6 +33,11 @@ namespace NikkeViewerEX.UI
             bgmPathInput = root.Q<TextField>("bgm-path-input");
             alJsonPathInput = root.Q<TextField>("al-json-path-input");
             alAssetsFolderInput = root.Q<TextField>("al-assets-folder-input");
+            staticJsonPathInput = root.Q<TextField>("static-json-path-input");
+            staticAssetsFolderInput = root.Q<TextField>("static-assets-folder-input");
+            staticThumbnailsFolderInput = root.Q<TextField>("static-thumbnails-folder-input");
+            voiceMappingJsonInput = root.Q<TextField>("voice-mapping-json-input");
+            voiceFilesFolderInput = root.Q<TextField>("voice-files-folder-input");
             loadButton = root.Q<Button>("load-button");
             statusText = root.Q<Label>("status-text");
         }
@@ -41,6 +51,11 @@ namespace NikkeViewerEX.UI
             root.Q<Button>("browse-bgm").clicked += () => BrowseBgmFile().Forget();
             root.Q<Button>("browse-al-json").clicked += () => BrowseAlJsonFile().Forget();
             root.Q<Button>("browse-al-assets").clicked += () => BrowseAlAssetsFolder().Forget();
+            root.Q<Button>("browse-static-json").clicked += () => BrowseStaticJsonFile().Forget();
+            root.Q<Button>("browse-static-assets").clicked += () => BrowseStaticAssetsFolder().Forget();
+            root.Q<Button>("browse-static-thumbnails").clicked += () => BrowseStaticThumbnailsFolder().Forget();
+            root.Q<Button>("browse-voice-mapping").clicked += () => BrowseVoiceMappingJson().Forget();
+            root.Q<Button>("browse-voice-files").clicked += () => BrowseVoiceFilesFolder().Forget();
             loadButton.clicked += () => LoadDatabase().Forget();
         }
 
@@ -64,6 +79,16 @@ namespace NikkeViewerEX.UI
                 alJsonPathInput.value = settingsManager.NikkeSettings.AzurLaneDatabaseJsonPath;
             if (!string.IsNullOrEmpty(settingsManager.NikkeSettings.AzurLaneAssetsFolder))
                 alAssetsFolderInput.value = settingsManager.NikkeSettings.AzurLaneAssetsFolder;
+            if (!string.IsNullOrEmpty(settingsManager.NikkeSettings.StaticPaintingDatabaseJsonPath))
+                staticJsonPathInput.value = settingsManager.NikkeSettings.StaticPaintingDatabaseJsonPath;
+            if (!string.IsNullOrEmpty(settingsManager.NikkeSettings.StaticPaintingAssetsFolder))
+                staticAssetsFolderInput.value = settingsManager.NikkeSettings.StaticPaintingAssetsFolder;
+            if (!string.IsNullOrEmpty(settingsManager.NikkeSettings.StaticPaintingThumbnailsFolder))
+                staticThumbnailsFolderInput.value = settingsManager.NikkeSettings.StaticPaintingThumbnailsFolder;
+            if (!string.IsNullOrEmpty(settingsManager.NikkeSettings.VoiceMappingJsonPath))
+                voiceMappingJsonInput.value = settingsManager.NikkeSettings.VoiceMappingJsonPath;
+            if (!string.IsNullOrEmpty(settingsManager.NikkeSettings.VoiceFilesFolder))
+                voiceFilesFolderInput.value = settingsManager.NikkeSettings.VoiceFilesFolder;
 
             bool hideUI = settingsManager.NikkeSettings.HideUI;
             isHoverModeEnabled = hideUI;
@@ -80,7 +105,8 @@ namespace NikkeViewerEX.UI
 
             if (!string.IsNullOrEmpty(jsonPath) && !string.IsNullOrEmpty(assetsFolder))
                 LoadDatabase().Forget();
-            else if (!string.IsNullOrEmpty(settingsManager.NikkeSettings.AzurLaneAssetsFolder))
+            else if (!string.IsNullOrEmpty(settingsManager.NikkeSettings.AzurLaneAssetsFolder)
+                  || !string.IsNullOrEmpty(settingsManager.NikkeSettings.StaticPaintingAssetsFolder))
                 PopulateAzurLaneList();
         }
 
@@ -131,14 +157,77 @@ namespace NikkeViewerEX.UI
         {
             string path = await OpenFileBrowser("Select Azur Lane Database JSON", new[] { "json" });
             if (!string.IsNullOrEmpty(path))
+            {
                 alJsonPathInput.value = path;
+                settingsManager.NikkeSettings.AzurLaneDatabaseJsonPath = path;
+                await settingsManager.SaveSettings();
+            }
         }
 
         async UniTaskVoid BrowseAlAssetsFolder()
         {
             string path = await OpenFolderBrowser("Select Azur Lane Assets Root Folder");
             if (!string.IsNullOrEmpty(path))
+            {
                 alAssetsFolderInput.value = path;
+                settingsManager.NikkeSettings.AzurLaneAssetsFolder = path;
+                await settingsManager.SaveSettings();
+            }
+        }
+
+        async UniTaskVoid BrowseStaticJsonFile()
+        {
+            string path = await OpenFileBrowser("Select Static Painting Database JSON", new[] { "json" });
+            if (!string.IsNullOrEmpty(path))
+            {
+                staticJsonPathInput.value = path;
+                settingsManager.NikkeSettings.StaticPaintingDatabaseJsonPath = path;
+                await settingsManager.SaveSettings();
+            }
+        }
+
+        async UniTaskVoid BrowseStaticAssetsFolder()
+        {
+            string path = await OpenFolderBrowser("Select Static Painting Assets Folder");
+            if (!string.IsNullOrEmpty(path))
+            {
+                staticAssetsFolderInput.value = path;
+                settingsManager.NikkeSettings.StaticPaintingAssetsFolder = path;
+                await settingsManager.SaveSettings();
+            }
+        }
+
+        async UniTaskVoid BrowseStaticThumbnailsFolder()
+        {
+            string path = await OpenFolderBrowser("Select Static Painting Thumbnails Folder");
+            if (!string.IsNullOrEmpty(path))
+            {
+                staticThumbnailsFolderInput.value = path;
+                settingsManager.NikkeSettings.StaticPaintingThumbnailsFolder = path;
+                await settingsManager.SaveSettings();
+            }
+        }
+
+        async UniTaskVoid BrowseVoiceMappingJson()
+        {
+            string path = await OpenFileBrowser("Select Voice Mapping JSON", new[] { "json" });
+            if (!string.IsNullOrEmpty(path))
+            {
+                voiceMappingJsonInput.value = path;
+                settingsManager.NikkeSettings.VoiceMappingJsonPath = path;
+                await settingsManager.SaveSettings();
+            }
+        }
+
+        async UniTaskVoid BrowseVoiceFilesFolder()
+        {
+            string path = await OpenFolderBrowser("Select Voice Files Root Folder");
+            if (!string.IsNullOrEmpty(path))
+            {
+                voiceFilesFolderInput.value = path;
+                settingsManager.NikkeSettings.VoiceFilesFolder = path;
+                await settingsManager.SaveSettings();
+            }
         }
 
         async UniTask LoadDatabase()
@@ -174,6 +263,11 @@ namespace NikkeViewerEX.UI
             settingsManager.NikkeSettings.BgmFolder = bgmPathInput.value;
             settingsManager.NikkeSettings.AzurLaneDatabaseJsonPath = alJsonPathInput.value;
             settingsManager.NikkeSettings.AzurLaneAssetsFolder = alAssetsFolderInput.value;
+            settingsManager.NikkeSettings.StaticPaintingDatabaseJsonPath = staticJsonPathInput.value;
+            settingsManager.NikkeSettings.StaticPaintingAssetsFolder = staticAssetsFolderInput.value;
+            settingsManager.NikkeSettings.StaticPaintingThumbnailsFolder = staticThumbnailsFolderInput.value;
+            settingsManager.NikkeSettings.VoiceMappingJsonPath = voiceMappingJsonInput.value;
+            settingsManager.NikkeSettings.VoiceFilesFolder = voiceFilesFolderInput.value;
             await settingsManager.SaveSettings();
 
             try

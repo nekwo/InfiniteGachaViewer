@@ -166,34 +166,56 @@ namespace NikkeViewerEX.Core
         {
             foreach (AzurLaneCharacter character in NikkeSettings.AzurLaneList)
             {
-                AzurLaneViewer viewer = mainControl.InstantiateAzurLaneViewer();
-                if (viewer == null) continue;
+                NikkeViewerBase viewerBase;
 
-                viewer.AlCharacterData = character;
-                viewer.NikkeData.InstanceId = character.InstanceId;  // set early for RebuildActiveViewers
-                viewer.name = character.DisplayName;
-                
-                if (character.Position == Vector2.zero && Camera.main != null)
+                bool isStatic = string.Equals(character.Type, "static", System.StringComparison.OrdinalIgnoreCase);
+
+                if (isStatic)
                 {
-                    Vector3 camPos = Camera.main.transform.position;
-                    viewer.gameObject.transform.position = camPos + Camera.main.transform.forward * 5f;
+                    var viewer = mainControl.InstantiateStaticPaintingViewer();
+                    if (viewer == null) continue;
+                    viewer.AlCharacterData = character;
+                    viewerBase = viewer;
+                }
+                else if (character.IsSpine)
+                {
+                    viewerBase = mainControl.InstantiateAzurLaneSpineViewer();
+                    if (viewerBase == null) continue;
+
+                    viewerBase.AlCharacterData = character;
                 }
                 else
                 {
-                    viewer.gameObject.transform.position = character.Position;
+                    AzurLaneViewer viewer = mainControl.InstantiateAzurLaneViewer();
+                    if (viewer == null) continue;
+                    viewer.AlCharacterData = character;
+                    viewerBase = viewer;
                 }
-                viewer.gameObject.transform.localScale = character.Scale;
+
+                viewerBase.NikkeData.InstanceId = character.InstanceId;
+                viewerBase.name = character.DisplayName;
+
+                if (character.Position == Vector2.zero && Camera.main != null)
+                {
+                    Vector3 camPos = Camera.main.transform.position;
+                    viewerBase.gameObject.transform.position = camPos + Camera.main.transform.forward * 5f;
+                }
+                else
+                {
+                    viewerBase.gameObject.transform.position = character.Position;
+                }
+                viewerBase.gameObject.transform.localScale = character.Scale;
 
                 if (character.VoicesPath.Count > 0)
                 {
-                    viewer.TouchVoices = (
+                    viewerBase.TouchVoices = (
                         await UniTask.WhenAll(
                             character.VoicesPath.Select(async p => await LoadAudioClip(p))
                         )
                     ).ToList();
                 }
 
-                viewer.TriggerSpawn();
+                viewerBase.TriggerSpawn();
             }
         }
 

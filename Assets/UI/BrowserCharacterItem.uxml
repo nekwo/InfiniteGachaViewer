@@ -1,7 +1,10 @@
 <UXML xmlns="UnityEngine.UIElements">
     <VisualElement class="character-item character-card" name="character-item">
-        <!-- Thumbnail (top) -->
-        <VisualElement class="character-thumbnail" name="character-thumbnail" />
+        <!-- Thumbnail (top) with favorite overlay -->
+        <VisualElement class="character-thumbnail-wrap">
+            <VisualElement class="character-thumbnail" name="character-thumbnail" />
+            <Button class="favorite-button" name="favorite-button" text="&#x2661;" />
+        </VisualElement>
 
         <!-- Info -->
         <VisualElement class="character-info">

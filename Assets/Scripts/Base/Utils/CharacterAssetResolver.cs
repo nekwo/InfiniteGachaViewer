@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -74,7 +75,18 @@ namespace NikkeViewerEX.Utils
     public class AzurLaneAssetInfo
     {
         public string Model3JsonPath;
-        public bool IsValid => !string.IsNullOrEmpty(Model3JsonPath) && File.Exists(Model3JsonPath);
+        // Spine fields
+        public string SkelPath;
+        public string AtlasPath;
+        public List<string> TexturesPath = new();
+        // Static painting fields
+        public string StaticPaintingPath;
+        public string FaceJsonPath;
+        public bool IsSpine => !string.IsNullOrEmpty(SkelPath);
+        public bool IsStatic => !string.IsNullOrEmpty(StaticPaintingPath);
+        public bool IsValid => (!string.IsNullOrEmpty(Model3JsonPath) && File.Exists(Model3JsonPath))
+                            || (!string.IsNullOrEmpty(SkelPath) && File.Exists(SkelPath))
+                            || (!string.IsNullOrEmpty(StaticPaintingPath) && File.Exists(StaticPaintingPath));
     }
 
     public static class CharacterAssetResolver
@@ -276,7 +288,30 @@ namespace NikkeViewerEX.Utils
             if (!Directory.Exists(charFolder))
                 return info;
 
-            // Try canonical name first, then any .model3.json in the folder
+            // Check for Spine assets first (.skel)
+            string skelCanonical = Path.Combine(charFolder, $"{characterId}.skel");
+            string skelPath = File.Exists(skelCanonical) ? skelCanonical
+                : FindFirstByExtension(charFolder, "*.skel");
+
+            if (!string.IsNullOrEmpty(skelPath))
+            {
+                info.SkelPath = skelPath;
+                info.AtlasPath = Path.Combine(charFolder, $"{characterId}.atlas");
+                if (!File.Exists(info.AtlasPath))
+                    info.AtlasPath = FindFirstByExtension(charFolder, "*.atlas");
+
+                // Collect all PNG textures, sorted so base texture comes first
+                if (Directory.Exists(charFolder))
+                {
+                    var pngs = Directory.GetFiles(charFolder, "*.png")
+                        .OrderBy(p => p, StringComparer.OrdinalIgnoreCase)
+                        .ToList();
+                    info.TexturesPath = pngs;
+                }
+                return info;
+            }
+
+            // Try Live2D (.model3.json)
             string canonical = Path.Combine(charFolder, $"{characterId}.model3.json");
             if (File.Exists(canonical))
                 info.Model3JsonPath = canonical;
@@ -285,6 +320,19 @@ namespace NikkeViewerEX.Utils
                 string[] found = Directory.GetFiles(charFolder, "*.model3.json");
                 if (found.Length > 0)
                     info.Model3JsonPath = found[0];
+            }
+
+            // Try static painting ({id}.png without model3/skel)
+            if (string.IsNullOrEmpty(info.Model3JsonPath) && string.IsNullOrEmpty(info.SkelPath))
+            {
+                string staticPath = Path.Combine(charFolder, $"{characterId}.png");
+                if (File.Exists(staticPath))
+                {
+                    info.StaticPaintingPath = staticPath;
+                    string faceJson = Path.Combine(charFolder, "face.json");
+                    if (File.Exists(faceJson))
+                        info.FaceJsonPath = faceJson;
+                }
             }
 
             return info;
@@ -301,12 +349,27 @@ namespace NikkeViewerEX.Utils
             if (string.IsNullOrEmpty(assetsFolder) || !Directory.Exists(assetsFolder))
                 return results;
 
+            // Scan main folder (L2D models)
             foreach (string dir in Directory.GetDirectories(assetsFolder))
             {
                 string id = Path.GetFileName(dir);
+                if (id == "l2d") continue; // skip the spine subfolder itself
                 var info = ResolveAzurLane(assetsFolder, id);
                 if (info.IsValid)
                     results[id] = info;
+            }
+
+            // Scan l2d/ subfolder (Spine models — yes the game calls them l2d)
+            string spineSubfolder = Path.Combine(assetsFolder, "l2d");
+            if (Directory.Exists(spineSubfolder))
+            {
+                foreach (string dir in Directory.GetDirectories(spineSubfolder))
+                {
+                    string id = Path.GetFileName(dir);
+                    var info = ResolveAzurLane(spineSubfolder, id);
+                    if (info.IsValid && !results.ContainsKey(id))
+                        results[id] = info;
+                }
             }
 
             return results;

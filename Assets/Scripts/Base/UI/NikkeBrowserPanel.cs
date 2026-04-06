@@ -42,6 +42,7 @@ namespace NikkeViewerEX.UI
         bool dragging;
         Vector2 dragStartPointer;
         Vector2 dragStartPanelPos;
+        VisualElement header;
 
         // Tab buttons
         Button tabConfigBtn;
@@ -80,6 +81,7 @@ namespace NikkeViewerEX.UI
             filterHasAssetsBtn.EnableInClassList("filter-active", true);
             filterFullBtn.EnableInClassList("filter-active", true);
             ApplyBrowserFilters();
+            AddDebugCorners();
         }
 
         void OnDisable()
@@ -89,8 +91,106 @@ namespace NikkeViewerEX.UI
 
         void Update()
         {
-            if (Keyboard.current != null && Keyboard.current.f1Key.wasPressedThisFrame)
-                TogglePanel();
+            // F1 key toggle disabled
+        }
+
+        void AddDebugCorners()
+        {
+            if (panel == null) return;
+            
+            var topLeft = new Button { name = "debug-tl", text = "" };
+            var topRight = new Button { name = "debug-tr", text = "" };
+            var bottomLeft = new Button { name = "debug-bl", text = "" };
+            var bottomRight = new Button { name = "debug-br", text = "" };
+            
+            topLeft.style.position = Position.Absolute;
+            topLeft.style.left = 0;
+            topLeft.style.top = 0;
+            topLeft.style.width = 30;
+            topLeft.style.height = 30;
+            topLeft.style.opacity = 0;
+            
+            topRight.style.position = Position.Absolute;
+            topRight.style.right = 0;
+            topRight.style.top = 0;
+            topRight.style.width = 30;
+            topRight.style.height = 30;
+            topRight.style.opacity = 0;
+            
+            bottomLeft.style.position = Position.Absolute;
+            bottomLeft.style.left = 0;
+            bottomLeft.style.bottom = 0;
+            bottomLeft.style.width = 30;
+            bottomLeft.style.height = 30;
+            bottomLeft.style.opacity = 0;
+            
+            bottomRight.style.position = Position.Absolute;
+            bottomRight.style.right = 0;
+            bottomRight.style.bottom = 0;
+            bottomRight.style.width = 30;
+            bottomRight.style.height = 30;
+            bottomRight.style.opacity = 0;
+            
+            topLeft.clicked += () => Debug.Log($"[Debug] TL clicked - button: {topLeft.worldBound}, mouse: {Mouse.current.position.ReadValue()}");
+            topRight.clicked += () => Debug.Log($"[Debug] TR clicked - button: {topRight.worldBound}, mouse: {Mouse.current.position.ReadValue()}");
+            bottomLeft.clicked += () => Debug.Log($"[Debug] BL clicked - button: {bottomLeft.worldBound}, mouse: {Mouse.current.position.ReadValue()}");
+            bottomRight.clicked += () => Debug.Log($"[Debug] BR clicked - button: {bottomRight.worldBound}, mouse: {Mouse.current.position.ReadValue()}");
+            
+            panel.Add(topLeft);
+            panel.Add(topRight);
+            panel.Add(bottomLeft);
+            panel.Add(bottomRight);
+        }
+
+        public Vector2 GetPanelPosition() => panel?.worldBound.position ?? Vector2.zero;
+        public Vector2 GetPanelSize() => panel?.worldBound.size ?? Vector2.zero;
+        
+        public Rect GetPanelBounds()
+        {
+            if (panel == null) return Rect.zero;
+            
+            if (root?.panel == null) return Rect.zero;
+            
+            panel.MarkDirtyRepaint();
+            
+            float scaleFactor = root.panel.scaledPixelsPerPoint;
+            
+            float x = panel.resolvedStyle.left;
+            float y = panel.resolvedStyle.top;
+            float width = panel.resolvedStyle.width;
+            float height = panel.resolvedStyle.height;
+            
+            if (width <= 0 || height <= 0 || float.IsNaN(width) || float.IsNaN(height))
+            {
+                Rect layoutRect = panel.layout;
+                if (layoutRect.width > 0 && layoutRect.height > 0)
+                {
+                    x = layoutRect.x;
+                    y = layoutRect.y;
+                    width = layoutRect.width;
+                    height = layoutRect.height;
+                }
+            }
+            
+            if (width <= 0 || height <= 0)
+            {
+                Rect worldBounds = panel.worldBound;
+                if (worldBounds.width > 0 && worldBounds.height > 0)
+                {
+                    x = worldBounds.x;
+                    y = Screen.height - worldBounds.y - worldBounds.height;
+                    width = worldBounds.width;
+                    height = worldBounds.height;
+                }
+            }
+            
+            if (width <= 0 || height <= 0) return Rect.zero;
+            
+            Vector2 screenPos = new Vector2(x, y);
+            screenPos.y = Screen.height - screenPos.y - (height * scaleFactor);
+            
+            float extraHeight = 100f;
+            return new Rect(screenPos.x, screenPos.y - extraHeight, width * scaleFactor, (height * scaleFactor) + extraHeight);
         }
         #endregion
 
@@ -131,11 +231,12 @@ namespace NikkeViewerEX.UI
         #region Event Binding
         void BindEvents()
         {
-            var header = root.Q("header");
+            header = root.Q("header");
             header.pickingMode = PickingMode.Position;
             header.RegisterCallback<PointerDownEvent>(OnHeaderPointerDown);
             header.RegisterCallback<PointerMoveEvent>(OnHeaderPointerMove);
             header.RegisterCallback<PointerUpEvent>(OnHeaderPointerUp);
+            header.RegisterCallback<PointerCaptureOutEvent>(OnHeaderPointerCaptureOut);
 
             hoverZone.RegisterCallback<PointerEnterEvent>(OnHoverZoneEnter);
             hoverZone.RegisterCallback<PointerDownEvent>(OnHoverZoneClick);
@@ -162,10 +263,10 @@ namespace NikkeViewerEX.UI
 
         void UnbindEvents()
         {
-            var header = root.Q("header");
             header.UnregisterCallback<PointerDownEvent>(OnHeaderPointerDown);
             header.UnregisterCallback<PointerMoveEvent>(OnHeaderPointerMove);
             header.UnregisterCallback<PointerUpEvent>(OnHeaderPointerUp);
+            header.UnregisterCallback<PointerCaptureOutEvent>(OnHeaderPointerCaptureOut);
 
             hoverZone.UnregisterCallback<PointerEnterEvent>(OnHoverZoneEnter);
             hoverZone.UnregisterCallback<PointerDownEvent>(OnHoverZoneClick);
@@ -183,11 +284,7 @@ namespace NikkeViewerEX.UI
 
         void OnPanelPointerLeave(PointerLeaveEvent evt)
         {
-            if (isHoverModeEnabled)
-            {
-                Hide();
-                hoverZone.style.opacity = 0;
-            }
+            // Hover mode disabled - panel won't hide on mouse leave
         }
 
         void OnHoverZoneClick(PointerDownEvent evt)
@@ -221,7 +318,7 @@ namespace NikkeViewerEX.UI
             dragging = true;
             dragStartPointer = evt.position;
             dragStartPanelPos = new Vector2(panel.resolvedStyle.left, panel.resolvedStyle.top);
-            (evt.target as VisualElement)?.CapturePointer(evt.pointerId);
+            header.CapturePointer(evt.pointerId);
             evt.StopPropagation();
         }
 
@@ -238,8 +335,16 @@ namespace NikkeViewerEX.UI
         {
             if (!dragging) return;
             dragging = false;
-            (evt.target as VisualElement)?.ReleasePointer(evt.pointerId);
+            header.ReleasePointer(evt.pointerId);
+            panel.MarkDirtyRepaint();
             evt.StopPropagation();
+        }
+
+        void OnHeaderPointerCaptureOut(PointerCaptureOutEvent evt)
+        {
+            // Safety net: if the capture is lost (e.g. pointer left the window),
+            // reset drag state so the panel doesn't get stuck unresponsive.
+            dragging = false;
         }
         #endregion
 

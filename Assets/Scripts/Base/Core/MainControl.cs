@@ -38,6 +38,14 @@ namespace NikkeViewerEX.Core
         [SerializeField]
         private AzurLaneViewer m_AzurLaneViewerPrefab;
 
+        [Tooltip("Prefab for Azur Lane Spine viewer")]
+        [SerializeField]
+        private NikkeViewerBase m_AzurLaneSpineViewerPrefab;
+
+        [Tooltip("Prefab for Azur Lane static painting viewer")]
+        [SerializeField]
+        private StaticPaintingViewer m_StaticPaintingViewerPrefab;
+
         [Header("UI")]
         [Tooltip("Main Control UI Group")]
         [SerializeField]
@@ -385,6 +393,32 @@ namespace NikkeViewerEX.Core
                 return null;
             }
             return Instantiate(m_AzurLaneViewerPrefab);
+        }
+
+        /// <summary>
+        /// Instantiate an Azur Lane Spine viewer.
+        /// </summary>
+        public NikkeViewerBase InstantiateAzurLaneSpineViewer()
+        {
+            if (m_AzurLaneSpineViewerPrefab == null)
+            {
+                Debug.LogError("[MainControl] AzurLane Spine viewer prefab is not assigned.");
+                return null;
+            }
+            return Instantiate(m_AzurLaneSpineViewerPrefab);
+        }
+
+        /// <summary>
+        /// Instantiate an Azur Lane static painting viewer.
+        /// </summary>
+        public StaticPaintingViewer InstantiateStaticPaintingViewer()
+        {
+            if (m_StaticPaintingViewerPrefab == null)
+            {
+                Debug.LogError("[MainControl] Static painting viewer prefab is not assigned.");
+                return null;
+            }
+            return Instantiate(m_StaticPaintingViewerPrefab);
         }
 
         /// <summary>

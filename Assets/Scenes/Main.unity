@@ -905,7 +905,15 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 1245577867}
     - target: {fileID: 1442561797641865502, guid: 3947299aa47abdc41b2b04cfb8d018e7, type: 3}
+      propertyPath: m_FPSDropdown
+      value: 
+      objectReference: {fileID: 1245577867}
+    - target: {fileID: 1442561797641865502, guid: 3947299aa47abdc41b2b04cfb8d018e7, type: 3}
       propertyPath: BackgroundImage
+      value: 
+      objectReference: {fileID: 773190231}
+    - target: {fileID: 1442561797641865502, guid: 3947299aa47abdc41b2b04cfb8d018e7, type: 3}
+      propertyPath: m_BackgroundImage
       value: 
       objectReference: {fileID: 773190231}
     - target: {fileID: 1442561797641865502, guid: 3947299aa47abdc41b2b04cfb8d018e7, type: 3}
@@ -921,11 +929,31 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 1377265295}
     - target: {fileID: 1442561797641865502, guid: 3947299aa47abdc41b2b04cfb8d018e7, type: 3}
+      propertyPath: m_BackgroundImageInput
+      value: 
+      objectReference: {fileID: 566973064}
+    - target: {fileID: 1442561797641865502, guid: 3947299aa47abdc41b2b04cfb8d018e7, type: 3}
+      propertyPath: m_BackgroundMusicAudio
+      value: 
+      objectReference: {fileID: 121607142}
+    - target: {fileID: 1442561797641865502, guid: 3947299aa47abdc41b2b04cfb8d018e7, type: 3}
+      propertyPath: m_BackgroundMusicInput
+      value: 
+      objectReference: {fileID: 1377265295}
+    - target: {fileID: 1442561797641865502, guid: 3947299aa47abdc41b2b04cfb8d018e7, type: 3}
       propertyPath: BackgroundMusicStateToggle
       value: 
       objectReference: {fileID: 1538115422}
     - target: {fileID: 1442561797641865502, guid: 3947299aa47abdc41b2b04cfb8d018e7, type: 3}
       propertyPath: BackgroundMusicVolumeSlider
+      value: 
+      objectReference: {fileID: 556025574}
+    - target: {fileID: 1442561797641865502, guid: 3947299aa47abdc41b2b04cfb8d018e7, type: 3}
+      propertyPath: m_BackgroundMusicStateToggle
+      value: 
+      objectReference: {fileID: 1538115422}
+    - target: {fileID: 1442561797641865502, guid: 3947299aa47abdc41b2b04cfb8d018e7, type: 3}
+      propertyPath: m_BackgroundMusicVolumeSlider
       value: 
       objectReference: {fileID: 556025574}
     - target: {fileID: 5561955493356933093, guid: 3947299aa47abdc41b2b04cfb8d018e7, type: 3}

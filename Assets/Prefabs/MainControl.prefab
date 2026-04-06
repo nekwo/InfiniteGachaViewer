@@ -52,6 +52,8 @@ MonoBehaviour:
     - Key: 4.1
       Value: {fileID: 4875687364164016299, guid: 56bf43eb4d1905347894f1fb15aade8f, type: 3}
   m_AzurLaneViewerPrefab: {fileID: 6588088666038670747, guid: a81d4554e4ba17045b354e8fae9a6b3d, type: 3}
+  m_AzurLaneSpineViewerPrefab: {fileID: 7723177551080150979, guid: b40cde979a393ff4fac51d5f3bd00399, type: 3}
+  m_StaticPaintingViewerPrefab: {fileID: 4088073164245480327, guid: 4acc0b570898b0b42b58a4c032c09a8f, type: 3}
   m_MainControlUI: {fileID: 0}
   m_WelcomePanel: {fileID: 0}
   m_NikkeListContent: {fileID: 0}
@@ -69,16 +71,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d4c241eb59838cf4d96ce3618bfe5370, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  BackgroundImageInput: {fileID: 0}
-  BackgroundMusicInput: {fileID: 0}
-  BackgroundMusicVolumeSlider: {fileID: 0}
-  BackgroundMusicStateToggle: {fileID: 0}
-  BackgroundImage: {fileID: 0}
-  BackgroundMusicAudio: {fileID: 0}
-  FPSDropdown: {fileID: 0}
+  m_BackgroundImageInput: {fileID: 0}
+  m_BackgroundMusicInput: {fileID: 0}
+  m_BackgroundMusicVolumeSlider: {fileID: 0}
+  m_BackgroundMusicStateToggle: {fileID: 0}
+  m_BackgroundImage: {fileID: 0}
+  m_BackgroundMusicAudio: {fileID: 0}
+  m_FPSDropdown: {fileID: 0}
   m_SettingsFile: settings.json
   m_CachedDataDirectoryName: cache
-  SupportedAudioFiles:
+  m_SupportedAudioFiles:
   - .mp3
   - .ogg
   - .wav

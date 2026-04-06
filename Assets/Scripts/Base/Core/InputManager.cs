@@ -1,5 +1,7 @@
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
+using NikkeViewerEX.UI;
 
 namespace NikkeViewerEX.Core
 {
@@ -19,6 +21,35 @@ namespace NikkeViewerEX.Core
 
         [SerializeField]
         InputActionAsset inputSettings;
+
+        private static EventSystem _eventSystem;
+
+        public static bool IsPointerOverUI()
+        {
+            Vector2 mousePos = Mouse.current.position.ReadValue();
+            float screenHeight = Screen.height;
+            
+            var panels = Object.FindObjectsOfType<NikkeBrowserPanel>();
+            
+            foreach (var browserPanel in panels)
+            {
+                if (browserPanel == null) continue;
+                
+                Rect bounds = browserPanel.GetPanelBounds();
+                
+                if (bounds.width > 0 && bounds.height > 0)
+                {
+                    float mouseY = screenHeight - mousePos.y;
+                    Vector2 convertedMouse = new Vector2(mousePos.x, mouseY);
+                    bool contains = bounds.Contains(convertedMouse);
+                    Debug.Log($"[InputManager] Panel: {bounds}, Mouse: {mousePos} -> {convertedMouse}, Contains: {contains}");
+                    if (contains)
+                        return true;
+                }
+            }
+            
+            return false;
+        }
 
         void Awake()
         {

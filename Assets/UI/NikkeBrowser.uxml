@@ -33,6 +33,7 @@
 
                 <!-- Tab 1: Configuration -->
                 <VisualElement class="tab-content tab-visible" name="content-config">
+                    <ScrollView class="config-scroll" mode="Vertical" horizontal-scroller-visibility="Hidden">
                     <VisualElement class="config-section">
                         <Label class="config-description"
                             text="Set the path to your character database JSON file and the root folder containing character assets. Each character folder should be named by its ID and contain .skel, .atlas, and .png files." />
@@ -107,12 +108,63 @@
                             </VisualElement>
                         </VisualElement>
 
+                        <!-- Static Painting Database -->
+                        <VisualElement class="field-group">
+                            <Label class="field-label" text="Static Painting Database (JSON)" />
+                            <VisualElement class="field-row">
+                                <TextField class="field-input" name="static-json-path-input"
+                                    placeholder="Path to static.json..." />
+                                <Button class="browse-button" name="browse-static-json" text="Browse" />
+                            </VisualElement>
+                        </VisualElement>
+
+                        <!-- Static Painting Assets Folder -->
+                        <VisualElement class="field-group">
+                            <Label class="field-label" text="Static Painting Assets Folder" />
+                            <VisualElement class="field-row">
+                                <TextField class="field-input" name="static-assets-folder-input"
+                                    placeholder="Root folder containing *_static character folders..." />
+                                <Button class="browse-button" name="browse-static-assets" text="Browse" />
+                            </VisualElement>
+                        </VisualElement>
+
+                        <!-- Static Painting Thumbnails Folder -->
+                        <VisualElement class="field-group">
+                            <Label class="field-label" text="Static Painting Thumbnails Folder (Optional)" />
+                            <VisualElement class="field-row">
+                                <TextField class="field-input" name="static-thumbnails-folder-input"
+                                    placeholder="Folder containing si_*.png static thumbnails..." />
+                                <Button class="browse-button" name="browse-static-thumbnails" text="Browse" />
+                            </VisualElement>
+                        </VisualElement>
+
+                        <!-- Voice Mapping JSON -->
+                        <VisualElement class="field-group">
+                            <Label class="field-label" text="Voice Mapping (JSON)" />
+                            <VisualElement class="field-row">
+                                <TextField class="field-input" name="voice-mapping-json-input"
+                                    placeholder="Path to voice_mapping.json..." />
+                                <Button class="browse-button" name="browse-voice-mapping" text="Browse" />
+                            </VisualElement>
+                        </VisualElement>
+
+                        <!-- Voice Files Folder -->
+                        <VisualElement class="field-group">
+                            <Label class="field-label" text="Voice Files Folder" />
+                            <VisualElement class="field-row">
+                                <TextField class="field-input" name="voice-files-folder-input"
+                                    placeholder="Root folder containing extracted WAV files..." />
+                                <Button class="browse-button" name="browse-voice-files" text="Browse" />
+                            </VisualElement>
+                        </VisualElement>
+
                         <!-- Load Button -->
                         <Button class="load-button" name="load-button" text="Load Database" />
 
                         <!-- Status -->
                         <Label class="status-text" name="status-text" text="" />
                     </VisualElement>
+                    </ScrollView>
                 </VisualElement>
 
                 <!-- Tab 2: Character Browser -->
@@ -137,6 +189,7 @@
                             <Label class="filter-label" text="Filters" />
                             <Button class="filter-button" name="filter-has-assets" text="Has Assets" />
                             <Button class="filter-button" name="filter-full" text="Full Characters" />
+                            <Button class="filter-button filter-favorites" name="filter-favorites" text="&#x2665; Favorites" />
                         </VisualElement>
 
                         <!-- List header -->
@@ -160,6 +213,15 @@
                         <VisualElement class="search-bar">
                             <TextField class="search-input" name="al-search-input"
                                 placeholder="Search Azur Lane characters..." />
+                        </VisualElement>
+
+                        <!-- Filters -->
+                        <VisualElement class="filter-bar">
+                            <Label class="filter-label" text="Type" />
+                            <Button class="filter-button" name="al-filter-l2d" text="Live2D" />
+                            <Button class="filter-button" name="al-filter-spine" text="Spine" />
+                            <Button class="filter-button" name="al-filter-static" text="Static" />
+                            <Button class="filter-button filter-favorites" name="al-filter-favorites" text="&#x2665; Favorites" />
                         </VisualElement>
 
                         <!-- List header -->

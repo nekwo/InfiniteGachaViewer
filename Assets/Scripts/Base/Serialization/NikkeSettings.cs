@@ -58,9 +58,15 @@ namespace NikkeViewerEX.Serialization
         public string BgmFolder;
         public string AzurLaneDatabaseJsonPath;
         public string AzurLaneAssetsFolder;
+        public string StaticPaintingDatabaseJsonPath;
+        public string StaticPaintingAssetsFolder;
+        public string StaticPaintingThumbnailsFolder;
+        public string VoiceMappingJsonPath;
+        public string VoiceFilesFolder;
         public List<Nikke> NikkeList = new();
         public List<AzurLaneCharacter> AzurLaneList = new();
         public List<NikkePreset> Presets = new();
+        public List<string> Favorites = new();
     }
 
     [Serializable]
@@ -97,7 +103,13 @@ namespace NikkeViewerEX.Serialization
         public int InstanceId;
         public string DisplayName;
         public string AssetName;
+        /// <summary>"l2d" (default) or "spine".</summary>
+        public string Type;
         public string Model3JsonPath;
+        // Spine-specific fields (used when Type == "spine")
+        public string SkelPath;
+        public string AtlasPath;
+        public List<string> TexturesPath = new();
         public List<string> VoicesPath = new();
         public Vector3 Scale = Vector3.one;
         public Vector2 Position;
@@ -109,6 +121,13 @@ namespace NikkeViewerEX.Serialization
         public List<PhysicsScaleOverride> PhysicsScaleOverrides = new();
         public List<PartOpacityOverride> PartOpacityOverrides = new();
         public List<DrawableOpacityOverride> DrawableOpacityOverrides = new();
+        public bool ParameterOverridesEnabled;
+        public bool PhysicsOverridesEnabled;
+        public bool PartOverridesEnabled;
+        public bool DrawableOverridesEnabled;
+        public float ColliderScale = 1f;
+
+        public bool IsSpine => string.Equals(Type, "spine", StringComparison.OrdinalIgnoreCase);
     }
 
     [Serializable]
