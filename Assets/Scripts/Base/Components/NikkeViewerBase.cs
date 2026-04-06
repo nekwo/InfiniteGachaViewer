@@ -183,10 +183,105 @@ namespace NikkeViewerEX.Components
             public string CurrentSkin;
         }
 
+        public struct ParameterDebugInfo
+        {
+            public string Id;
+            public float Value;
+            public float MinValue;
+            public float MaxValue;
+            public float DefaultValue;
+        }
+
+        public struct PhysicsSubRigDebugInfo
+        {
+            public string Name;
+            public float AngleScaleRatio;
+        }
+
         /// <summary>
         /// Returns debug information for all loaded poses. Override in subclasses.
         /// </summary>
         public virtual List<PoseDebugInfo> GetPoseDebugInfo() => new();
+
+        /// <summary>
+        /// Returns live parameter values for debug display. Override in subclasses.
+        /// </summary>
+        public virtual List<ParameterDebugInfo> GetParameterDebugInfo() => new();
+
+        /// <summary>
+        /// Returns physics sub-rig info for debug display. Override in subclasses.
+        /// </summary>
+        public virtual List<PhysicsSubRigDebugInfo> GetPhysicsSubRigDebugInfo() => new();
+
+        /// <summary>
+        /// Sets the output angle scale ratio for a named physics sub-rig. Override in subclasses.
+        /// </summary>
+        public virtual void SetPhysicsSubRigScale(string subRigName, float ratio) { }
+
+        public struct PartOpacityDebugInfo
+        {
+            public string Id;
+            public float Opacity;
+            public float DefaultOpacity;
+        }
+
+        /// <summary>
+        /// Returns part opacity info for debug display. Override in subclasses.
+        /// </summary>
+        public virtual List<PartOpacityDebugInfo> GetPartOpacityDebugInfo() => new();
+
+        /// <summary>
+        /// Sets a part's opacity by ID. Override in subclasses.
+        /// </summary>
+        public virtual void SetPartOpacity(string partId, float opacity) { }
+
+        /// <summary>
+        /// Clears a part opacity override so the model drives it again. Override in subclasses.
+        /// </summary>
+        public virtual void ClearPartOpacityOverride(string partId) { }
+
+        public struct DrawableOpacityDebugInfo
+        {
+            public string Id;
+            public float Opacity;
+            public float DefaultOpacity;
+        }
+
+        /// <summary>
+        /// Returns drawable opacity info for debug display. Override in subclasses.
+        /// </summary>
+        public virtual List<DrawableOpacityDebugInfo> GetDrawableOpacityDebugInfo() => new();
+
+        /// <summary>
+        /// Sets a drawable's color alpha by ID. Override in subclasses.
+        /// </summary>
+        public virtual void SetDrawableOpacity(string drawableId, float opacity) { }
+
+        /// <summary>
+        /// Clears a drawable opacity override. Override in subclasses.
+        /// </summary>
+        public virtual void ClearDrawableOpacityOverride(string drawableId) { }
+
+        /// <summary>
+        /// Returns the IDs of all drawables whose mesh bounds intersect the given screen position.
+        /// </summary>
+        public virtual List<string> GetDrawablesAtScreenPosition(Vector2 screenPos) => new();
+
+        /// <summary>Per-section override toggles (all off by default).</summary>
+        public bool ParameterOverridesEnabled { get; set; } = false;
+        public bool PartOverridesEnabled { get; set; } = false;
+        public bool DrawableOverridesEnabled { get; set; } = false;
+        public bool PhysicsOverridesEnabled { get; set; } = false;
+
+        /// <summary>
+        /// Sets a parameter override by ID (applied in LateUpdate). Override in subclasses.
+        /// </summary>
+        public virtual void SetParameterValue(string parameterId, float value) { }
+
+        /// <summary>
+        /// Removes a parameter override so animation drives it again. Override in subclasses.
+        /// </summary>
+        public virtual void ClearParameterOverride(string parameterId) { }
 
         /// <summary>
         /// Play an animation by name. Override in subclasses.

@@ -38,10 +38,15 @@ namespace NikkeViewerEX.UI
             foreach (var nikke in settings.NikkeList)
                 snapshot.Add(JsonUtility.FromJson<Nikke>(JsonUtility.ToJson(nikke)));
 
+            var alSnapshot = new List<AzurLaneCharacter>();
+            foreach (var alChar in settings.AzurLaneList)
+                alSnapshot.Add(JsonUtility.FromJson<AzurLaneCharacter>(JsonUtility.ToJson(alChar)));
+
             var preset = new NikkePreset
             {
                 Name = name,
                 NikkeList = snapshot,
+                AzurLaneList = alSnapshot,
                 BackgroundImage = settings.BackgroundImage,
                 BackgroundScale = settings.BackgroundScale,
                 BackgroundPanX = settings.BackgroundPanX,
@@ -84,7 +89,7 @@ namespace NikkeViewerEX.UI
                 var nameLabel = new Label(preset.Name);
                 nameLabel.AddToClassList("preset-name");
 
-                int count = preset.NikkeList.Count;
+                int count = preset.NikkeList.Count + preset.AzurLaneList.Count;
                 string details = $"{count} character{(count != 1 ? "s" : "")}";
                 if (!string.IsNullOrEmpty(preset.BackgroundImage))
                     details += " | BG";
@@ -136,6 +141,7 @@ namespace NikkeViewerEX.UI
             activeViewers.Clear();
             currentVariation.Clear();
             settingsManager.NikkeSettings.NikkeList.Clear();
+            settingsManager.NikkeSettings.AzurLaneList.Clear();
 
             await UniTask.NextFrame();
 
@@ -213,6 +219,46 @@ namespace NikkeViewerEX.UI
             }
 
             settings.NikkeList = newList;
+
+            // Restore Azur Lane characters
+            var newAlList = new List<AzurLaneCharacter>();
+
+            foreach (var savedAlChar in preset.AzurLaneList)
+            {
+                try
+                {
+                    AzurLaneViewer alViewer = mainControl.InstantiateAzurLaneViewer();
+                    if (alViewer == null) continue;
+
+                    var character = JsonUtility.FromJson<AzurLaneCharacter>(JsonUtility.ToJson(savedAlChar));
+                    alViewer.AlCharacterData = character;
+                    alViewer.NikkeData.InstanceId = character.InstanceId;
+                    alViewer.name = character.DisplayName;
+                    alViewer.gameObject.transform.position = character.Position;
+                    alViewer.gameObject.transform.localScale = character.Scale;
+
+                    if (character.VoicesPath.Count > 0)
+                    {
+                        var clips = new List<AudioClip>();
+                        foreach (string path in character.VoicesPath)
+                        {
+                            var clip = await WebRequestHelper.GetAudioClip(path);
+                            if (clip != null) clips.Add(clip);
+                        }
+                        alViewer.TouchVoices = clips;
+                    }
+
+                    alViewer.TriggerSpawn();
+                    activeViewers[character.InstanceId] = alViewer;
+                    newAlList.Add(character);
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogError($"Failed to load AL '{savedAlChar.AssetName}' from preset '{preset.Name}': {ex.Message}");
+                }
+            }
+
+            settings.AzurLaneList = newAlList;
             await settingsManager.SaveSettings();
 
             UpdateBrowserCount();

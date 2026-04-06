@@ -1345,3 +1345,59 @@
     color: var(--color-success);
     -unity-font-style: bold;
 }
+
+.debug-collapse-btn {
+    width: 24px;
+    height: 24px;
+    min-width: 24px;
+    font-size: 11px;
+    padding: 0;
+    margin-right: var(--spacing-xs);
+    background-color: var(--bg-input);
+    border-width: 1px;
+    border-color: var(--border-subtle);
+    border-radius: var(--radius-sm);
+    color: var(--text-secondary);
+    -unity-text-align: middle-center;
+}
+
+.debug-collapse-btn:hover {
+    background-color: var(--bg-surface-light);
+    color: var(--text-primary);
+}
+
+.debug-param-reset-all-btn {
+    height: 22px;
+    font-size: 11px;
+    padding: 0 8px;
+    background-color: var(--bg-input);
+    border-width: 1px;
+    border-color: var(--border-subtle);
+    border-radius: var(--radius-sm);
+    color: var(--text-secondary);
+}
+
+.debug-param-reset-all-btn:hover {
+    background-color: var(--bg-surface-light);
+    color: var(--color-primary);
+}
+
+.debug-param-reset-btn {
+    width: 22px;
+    height: 22px;
+    min-width: 22px;
+    font-size: 10px;
+    padding: 0;
+    margin-left: var(--spacing-xs);
+    background-color: var(--bg-input);
+    border-width: 1px;
+    border-color: var(--border-subtle);
+    border-radius: var(--radius-sm);
+    color: var(--text-secondary);
+    -unity-text-align: middle-center;
+}
+
+.debug-param-reset-btn:hover {
+    background-color: var(--bg-surface-light);
+    color: var(--color-primary);
+}

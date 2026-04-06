@@ -7,6 +7,7 @@ using Live2D.Cubism.Core;
 using Live2D.Cubism.Framework;
 using Live2D.Cubism.Framework.LookAt;
 using Live2D.Cubism.Framework.Motion;
+using Live2D.Cubism.Framework.Physics;
 using Live2D.Cubism.Framework.Raycasting;
 using NikkeViewerEX.Core;
 using NikkeViewerEX.Serialization;
@@ -18,12 +19,16 @@ using UnityEngine.InputSystem;
 namespace NikkeViewerEX.Components
 {
     [AddComponentMenu("Nikke Viewer EX/Components/Azur Lane Viewer")]
+    [DefaultExecutionOrder(20000)]
     public class AzurLaneViewer : NikkeViewerBase
     {
         [Serializable]
         public class AnimationOverrideJson
         {
             public MotionOverrideEntry[] motionOverrides;
+            public string idleOverride;
+            public string[] layer0Keys;
+            public string[] layer1Keys;
         }
 
         [Serializable]
@@ -42,6 +47,9 @@ namespace NikkeViewerEX.Components
 
         AnimationOverrideJson animationOverrideJson;
         Dictionary<string, List<AnimationClip>> motionOverridesMap = new();
+        readonly HashSet<string> layer0Keys = new(StringComparer.OrdinalIgnoreCase);
+        readonly HashSet<string> layer1Keys = new(StringComparer.OrdinalIgnoreCase);
+        AnimationClip idleOverrideClip;
 
         static int s_SortOrderCounter = 0;
         static readonly List<AzurLaneViewer> s_AllViewers = new();
@@ -58,6 +66,27 @@ namespace NikkeViewerEX.Components
         int touchIndex;
         bool spawned;
         bool isPlayingTouchMotion;
+        int lastTouchLayer = 1;
+        CubismMouthDebug mouthDebug;
+        CubismMouthFormOverride mouthFormOverride;
+
+        /// <summary>Debug parameter overrides applied in LateUpdate (not persisted).</summary>
+        readonly Dictionary<string, float> parameterOverrides = new();
+
+        /// <summary>Tracks current angle scale ratio per physics sub-rig name.</summary>
+        readonly Dictionary<string, float> physicsSubRigScales = new();
+
+        /// <summary>Part opacity overrides applied in LateUpdate.</summary>
+        readonly Dictionary<string, float> partOpacityOverrides = new();
+
+        /// <summary>Original part opacities cached at spawn time for reset.</summary>
+        readonly Dictionary<string, float> originalPartOpacities = new();
+
+        /// <summary>Drawable color alpha overrides applied in LateUpdate.</summary>
+        readonly Dictionary<string, float> drawableOpacityOverrides = new();
+
+        /// <summary>Original drawable color alphas cached at spawn time for reset.</summary>
+        readonly Dictionary<string, float> originalDrawableOpacities = new();
 
         public override void OnEnable()
         {
@@ -83,6 +112,50 @@ namespace NikkeViewerEX.Components
             AlCharacterData.Scale = NikkeData.Scale;
             AlCharacterData.Lock = NikkeData.Lock;
             AlCharacterData.HideName = NikkeData.HideName;
+            SyncParameterOverridesToData();
+        }
+
+        void SyncParameterOverridesToData()
+        {
+            AlCharacterData.ParameterOverrides.Clear();
+            foreach (var kvp in parameterOverrides)
+            {
+                AlCharacterData.ParameterOverrides.Add(new Serialization.ParameterOverride
+                {
+                    Id = kvp.Key,
+                    Value = kvp.Value,
+                });
+            }
+
+            AlCharacterData.PhysicsScaleOverrides.Clear();
+            foreach (var kvp in physicsSubRigScales)
+            {
+                AlCharacterData.PhysicsScaleOverrides.Add(new Serialization.PhysicsScaleOverride
+                {
+                    SubRigName = kvp.Key,
+                    Ratio = kvp.Value,
+                });
+            }
+
+            AlCharacterData.PartOpacityOverrides.Clear();
+            foreach (var kvp in partOpacityOverrides)
+            {
+                AlCharacterData.PartOpacityOverrides.Add(new Serialization.PartOpacityOverride
+                {
+                    PartId = kvp.Key,
+                    Opacity = kvp.Value,
+                });
+            }
+
+            AlCharacterData.DrawableOpacityOverrides.Clear();
+            foreach (var kvp in drawableOpacityOverrides)
+            {
+                AlCharacterData.DrawableOpacityOverrides.Add(new Serialization.DrawableOpacityOverride
+                {
+                    DrawableId = kvp.Key,
+                    Opacity = kvp.Value,
+                });
+            }
         }
 
         public override void TriggerSpawn()
@@ -150,6 +223,18 @@ namespace NikkeViewerEX.Components
             // Force initial update
             cubismModel.ForceUpdateNow();
 
+            // Cache original part opacities before any overrides
+            foreach (var part in cubismModel.Parts)
+                originalPartOpacities[part.Id] = part.Opacity;
+
+            // Cache original drawable color alphas before any overrides
+            foreach (var drawable in cubismModel.Drawables)
+            {
+                var renderer = drawable.GetComponent<Live2D.Cubism.Rendering.CubismRenderer>();
+                if (renderer != null)
+                    originalDrawableOpacities[drawable.Id] = renderer.Color.a;
+            }
+
             raycaster = cubismModel.GetComponent<CubismRaycaster>();
             if (raycaster == null)
                 raycaster = cubismModel.gameObject.AddComponent<CubismRaycaster>();
@@ -184,6 +269,15 @@ namespace NikkeViewerEX.Components
             // Setup mouse look-at tracking
             SetupLookAt();
 
+            // Mouth form override (sets smile at end of touch animations)
+            mouthFormOverride = cubismModel.gameObject.AddComponent<CubismMouthFormOverride>();
+            var updateCtrl = cubismModel.GetComponent<CubismUpdateController>();
+            if (updateCtrl != null)
+                updateCtrl.Refresh();
+
+            // Debug: track mouth parameter values
+            mouthDebug = cubismModel.gameObject.AddComponent<CubismMouthDebug>();
+
             // Add box collider for easier dragging
             AddBoxCollider();
 
@@ -192,6 +286,22 @@ namespace NikkeViewerEX.Components
 
             if (Mathf.Approximately(AlCharacterData.Brightness, 1f) == false)
                 ApplyBrightness(AlCharacterData.Brightness);
+
+            // Restore persisted parameter overrides
+            foreach (var po in AlCharacterData.ParameterOverrides)
+                parameterOverrides[po.Id] = po.Value;
+
+            // Restore persisted physics scale overrides
+            foreach (var pso in AlCharacterData.PhysicsScaleOverrides)
+                SetPhysicsSubRigScale(pso.SubRigName, pso.Ratio);
+
+            // Restore persisted part opacity overrides
+            foreach (var po in AlCharacterData.PartOpacityOverrides)
+                SetPartOpacity(po.PartId, po.Opacity);
+
+            // Restore persisted drawable opacity overrides
+            foreach (var doo in AlCharacterData.DrawableOpacityOverrides)
+                SetDrawableOpacity(doo.DrawableId, doo.Opacity);
         }
 
         static readonly int BrightnessPropertyId = Shader.PropertyToID("_Brightness");
@@ -277,6 +387,44 @@ namespace NikkeViewerEX.Components
                     }
                 }
 
+                // Process idle override
+                if (!string.IsNullOrEmpty(animationOverrideJson.idleOverride))
+                {
+                    string idleName = animationOverrideJson.idleOverride;
+                    string searchName = idleName.EndsWith(".motion3", StringComparison.OrdinalIgnoreCase)
+                        ? idleName
+                        : idleName + ".motion3";
+
+                    foreach (var clip in allMotions)
+                    {
+                        if (clip.name.Equals(searchName, StringComparison.OrdinalIgnoreCase))
+                        {
+                            idleOverrideClip = clip;
+                            Debug.Log($"[AzurLaneViewer] Idle override set to: {clip.name}");
+                            break;
+                        }
+                    }
+
+                    if (idleOverrideClip == null)
+                        Debug.LogWarning($"[AzurLaneViewer] Idle override '{idleName}' not found in available motions");
+                }
+
+                // Process layer0 keys
+                if (animationOverrideJson.layer0Keys != null)
+                {
+                    foreach (string k in animationOverrideJson.layer0Keys)
+                        layer0Keys.Add(k);
+                    Debug.Log($"[AzurLaneViewer] Layer 0 keys: {string.Join(", ", layer0Keys)}");
+                }
+
+                // Process layer1 keys (non-additive override on layer 2)
+                if (animationOverrideJson.layer1Keys != null)
+                {
+                    foreach (string k in animationOverrideJson.layer1Keys)
+                        layer1Keys.Add(k);
+                    Debug.Log($"[AzurLaneViewer] Layer 1 (non-additive) keys: {string.Join(", ", layer1Keys)}");
+                }
+
                 Debug.Log($"[AzurLaneViewer] Loaded animation overrides for: {string.Join(", ", motionOverridesMap.Keys)}");
             }
             catch (Exception ex)
@@ -329,21 +477,26 @@ namespace NikkeViewerEX.Components
                 motionController = cubismModel.gameObject.AddComponent<Live2D.Cubism.Framework.Motion.CubismMotionController>();
             }
             
-            // Recreate with 2 layers so idle (0) and touch (1) can play simultaneously
-            motionController.RecreateLayers(2);
-            
+            // Layer 0: idle, Layer 1: additive touch, Layer 2: non-additive touch override
+            motionController.RecreateLayers(3);
+
             // Set layer 1 to additive blend
             motionController.SetLayerAdditive(1, true);
             motionController.SetLayerWeight(1, 1.0f);
+
+            // Layer 2: non-additive override (normal blend)
+            motionController.SetLayerAdditive(2, false);
+            motionController.SetLayerWeight(2, 1.0f);
             
             // Subscribe to animation end to return to idle
             motionController.AnimationEndHandler += OnMotionAnimationEnd;
             Debug.Log("[AzurLaneViewer] Subscribed to AnimationEndHandler");
             
-            // Play idle if available
-            if (idleMotions.Count > 0)
+            // Play idle if available (override takes priority)
+            var idleClip = idleOverrideClip ?? (idleMotions.Count > 0 ? idleMotions[0] : null);
+            if (idleClip != null)
             {
-                motionController.PlayAnimation(idleMotions[0], isLoop: true, 
+                motionController.PlayAnimation(idleClip, isLoop: true,
                     priority: Live2D.Cubism.Framework.Motion.CubismMotionPriority.PriorityIdle);
             }
         }
@@ -411,7 +564,7 @@ namespace NikkeViewerEX.Components
 
         void OnMotionAnimationEnd(int instanceId)
         {
-            // Check if this was a touch motion (layer 1)
+            // Check if this was a touch motion
             bool wasTouchMotion = false;
             foreach (var clip in touchMotions)
             {
@@ -421,14 +574,102 @@ namespace NikkeViewerEX.Components
                     break;
                 }
             }
-            
-            if (wasTouchMotion)
+
+            // Also check override clips
+            if (!wasTouchMotion)
             {
-                isPlayingTouchMotion = false;
+                foreach (var clips in motionOverridesMap.Values)
+                {
+                    foreach (var clip in clips)
+                    {
+                        if (clip.GetInstanceID() == instanceId)
+                        {
+                            wasTouchMotion = true;
+                            break;
+                        }
+                    }
+                    if (wasTouchMotion) break;
+                }
             }
-            // Idle continues on layer 0, no action needed
+
+            if (!wasTouchMotion) return;
+
+            isPlayingTouchMotion = false;
+            if (mouthFormOverride != null)
+            {
+                mouthFormOverride.Paused = false;
+                mouthFormOverride.SetMouthForm(1f);
+            }
+            mouthDebug.PrintValue();
+
+            var mc = cubismModel.GetComponent<Live2D.Cubism.Framework.Motion.CubismMotionController>();
+
+            // Layer 2 (non-additive override): zero weight so frozen last frame doesn't stick
+            if (lastTouchLayer == 2 && mc != null)
+            {
+                mc.SetLayerWeight(2, 0f);
+            }
+
+            // If a layer 0 or layer 2 motion ended, resume idle
+            if (lastTouchLayer == 0 || lastTouchLayer == 2)
+            {
+                var idleClip = idleOverrideClip ?? (idleMotions.Count > 0 ? idleMotions[0] : null);
+                if (idleClip != null)
+                {
+                    mc?.PlayAnimation(idleClip, isLoop: true,
+                        priority: Live2D.Cubism.Framework.Motion.CubismMotionPriority.PriorityIdle);
+                }
+            }
         }
-        
+
+        void LateUpdate()
+        {
+
+
+            if (mouthFormOverride != null && !mouthFormOverride.Paused)
+            {
+                mouthFormOverride.SetMouthForm(1f);
+            }
+
+            // Apply debug parameter overrides after animation system has written values
+            if (ParameterOverridesEnabled && parameterOverrides.Count > 0 && cubismModel != null)
+            {
+                foreach (var p in cubismModel.Parameters)
+                {
+                    if (parameterOverrides.TryGetValue(p.Id, out float val))
+                        p.Value = val;
+                }
+            }
+
+            // Apply part opacity overrides
+            if (PartOverridesEnabled && partOpacityOverrides.Count > 0 && cubismModel != null)
+            {
+                foreach (var part in cubismModel.Parts)
+                {
+                    if (partOpacityOverrides.TryGetValue(part.Id, out float opacity))
+                        part.Opacity = opacity;
+                }
+            }
+
+            // Apply drawable opacity overrides via CubismRenderer.Color alpha
+            if (DrawableOverridesEnabled && drawableOpacityOverrides.Count > 0 && cubismModel != null)
+            {
+                foreach (var drawable in cubismModel.Drawables)
+                {
+                    if (drawableOpacityOverrides.TryGetValue(drawable.Id, out float alpha))
+                    {
+                        var renderer = drawable.GetComponent<Live2D.Cubism.Rendering.CubismRenderer>();
+                        if (renderer != null)
+                        {
+                            var c = renderer.Color;
+                            c.a = alpha;
+                            renderer.Color = c;
+                        }
+                    }
+                }
+            }
+        }
+
         void AddBoxCollider()
         {
             // Add a box collider that covers the model for easier dragging
@@ -445,9 +686,9 @@ namespace NikkeViewerEX.Components
                 boxCollider = cubismModel.gameObject.AddComponent<BoxCollider>();
             
             // Center the collider on the model
-            boxCollider.center = new Vector3(0, modelHeight / 2f, 0);
+            boxCollider.center = Vector3.zero;
             // Make it much larger for easier clicking
-            boxCollider.size = new Vector3(modelWidth * 3f, modelHeight * 3f, 2f);
+            boxCollider.size = new Vector3(modelWidth * 1f, modelHeight * 1f, 1f);
         }
 
         // ── Sorting ───────────────────────────────────────────────────────────────────
@@ -513,7 +754,19 @@ namespace NikkeViewerEX.Components
                     }
                 }
                 
-                hitAreaName = closestTouchPart;
+                if (closestDist < float.MaxValue)
+                {
+                    // A Touch* drawable was hit — use it
+                    hitAreaName = closestTouchPart;
+                }
+                else
+                {
+                    return; // No Touch* drawable hit — don't play animation
+                }
+            }
+            else
+            {
+                return; // No camera or raycaster — can't determine hit
             }
 
             Debug.Log($"[AzurLaneViewer] TouchPart: {hitAreaName}");
@@ -565,8 +818,19 @@ namespace NikkeViewerEX.Components
                     touchIndex++;
                 
                 isPlayingTouchMotion = true;
+                // layer0Keys → layer 0 (replaces idle), layer1Keys → layer 2 (non-additive override), default → layer 1 (additive)
+                int layerIndex = layer0Keys.Contains(hitAreaName) ? 0
+                    : layer1Keys.Contains(hitAreaName) ? 2
+                    : 1;
+                lastTouchLayer = layerIndex;
+                // Re-enable layer 2 weight if it was zeroed out
+                if (layerIndex == 2)
+                    motionController.SetLayerWeight(2, 1.0f);
+                if (mouthFormOverride != null)
+                    mouthFormOverride.Paused = true;
+                mouthDebug.PrintValue();
                 // Use PriorityForce to allow interrupting current animation
-                motionController.PlayAnimation(clipToPlay, layerIndex: 1, isLoop: false, 
+                motionController.PlayAnimation(clipToPlay, layerIndex: layerIndex, isLoop: false,
                     priority: Live2D.Cubism.Framework.Motion.CubismMotionPriority.PriorityForce);
             }
         }
@@ -598,6 +862,193 @@ namespace NikkeViewerEX.Components
                     CurrentSkin = "default",
                 }
             };
+        }
+
+        public override List<ParameterDebugInfo> GetParameterDebugInfo()
+        {
+            if (cubismModel == null) return new();
+
+            var list = new List<ParameterDebugInfo>();
+            foreach (var p in cubismModel.Parameters)
+            {
+                list.Add(new ParameterDebugInfo
+                {
+                    Id = p.Id,
+                    Value = p.Value,
+                    MinValue = p.MinimumValue,
+                    MaxValue = p.MaximumValue,
+                    DefaultValue = p.DefaultValue,
+                });
+            }
+            return list;
+        }
+
+        public override void SetParameterValue(string parameterId, float value)
+        {
+            if (cubismModel == null) return;
+            parameterOverrides[parameterId] = value;
+        }
+
+        public override void ClearParameterOverride(string parameterId)
+        {
+            parameterOverrides.Remove(parameterId);
+        }
+
+        public override List<PhysicsSubRigDebugInfo> GetPhysicsSubRigDebugInfo()
+        {
+            if (cubismModel == null) return new();
+
+            var physicsController = cubismModel.GetComponent<CubismPhysicsController>();
+            if (physicsController == null) return new();
+
+            var rig = physicsController.GetType()
+                .GetField("_rig", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
+                ?.GetValue(physicsController) as CubismPhysicsRig;
+            if (rig?.SubRigs == null) return new();
+
+            var list = new List<PhysicsSubRigDebugInfo>();
+            foreach (var subRig in rig.SubRigs)
+            {
+                physicsSubRigScales.TryGetValue(subRig.Name, out float ratio);
+                if (ratio == 0f) ratio = 1f;
+                list.Add(new PhysicsSubRigDebugInfo
+                {
+                    Name = subRig.Name,
+                    AngleScaleRatio = ratio,
+                });
+            }
+            return list;
+        }
+
+        public override void SetPhysicsSubRigScale(string subRigName, float ratio)
+        {
+            if (cubismModel == null) return;
+
+            physicsSubRigScales[subRigName] = ratio;
+
+            if (!PhysicsOverridesEnabled) return;
+
+            var physicsController = cubismModel.GetComponent<CubismPhysicsController>();
+            if (physicsController == null) return;
+
+            var rig = physicsController.GetType()
+                .GetField("_rig", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
+                ?.GetValue(physicsController) as CubismPhysicsRig;
+            var subRig = rig?.GetSubRig(subRigName);
+            if (subRig == null) return;
+
+            physicsController.SetPhysicsSubRigOutputAngleScaleRatio(subRig, ratio);
+        }
+
+        public override List<PartOpacityDebugInfo> GetPartOpacityDebugInfo()
+        {
+            if (cubismModel == null) return new();
+
+            var list = new List<PartOpacityDebugInfo>();
+            foreach (var part in cubismModel.Parts)
+            {
+                float opacity = partOpacityOverrides.TryGetValue(part.Id, out float ov) ? ov : part.Opacity;
+                originalPartOpacities.TryGetValue(part.Id, out float defaultOp);
+                list.Add(new PartOpacityDebugInfo
+                {
+                    Id = part.Id,
+                    Opacity = opacity,
+                    DefaultOpacity = defaultOp,
+                });
+            }
+            return list;
+        }
+
+        public override void SetPartOpacity(string partId, float opacity)
+        {
+            partOpacityOverrides[partId] = opacity;
+        }
+
+        public override void ClearPartOpacityOverride(string partId)
+        {
+            partOpacityOverrides.Remove(partId);
+
+            // Restore original opacity immediately
+            if (cubismModel != null && originalPartOpacities.TryGetValue(partId, out float original))
+            {
+                foreach (var part in cubismModel.Parts)
+                {
+                    if (part.Id == partId)
+                    {
+                        part.Opacity = original;
+                        break;
+                    }
+                }
+            }
+        }
+
+        public override List<DrawableOpacityDebugInfo> GetDrawableOpacityDebugInfo()
+        {
+            if (cubismModel == null) return new();
+
+            var list = new List<DrawableOpacityDebugInfo>();
+            foreach (var drawable in cubismModel.Drawables)
+            {
+                var renderer = drawable.GetComponent<Live2D.Cubism.Rendering.CubismRenderer>();
+                float currentAlpha = renderer != null ? renderer.Color.a : 1f;
+                if (drawableOpacityOverrides.TryGetValue(drawable.Id, out float ov))
+                    currentAlpha = ov;
+                originalDrawableOpacities.TryGetValue(drawable.Id, out float defaultAlpha);
+                list.Add(new DrawableOpacityDebugInfo
+                {
+                    Id = drawable.Id,
+                    Opacity = currentAlpha,
+                    DefaultOpacity = defaultAlpha,
+                });
+            }
+            return list;
+        }
+
+        public override void SetDrawableOpacity(string drawableId, float opacity)
+        {
+            drawableOpacityOverrides[drawableId] = opacity;
+        }
+
+        public override void ClearDrawableOpacityOverride(string drawableId)
+        {
+            drawableOpacityOverrides.Remove(drawableId);
+
+            // Restore original alpha immediately
+            if (cubismModel != null && originalDrawableOpacities.TryGetValue(drawableId, out float original))
+            {
+                foreach (var drawable in cubismModel.Drawables)
+                {
+                    if (drawable.Id == drawableId)
+                    {
+                        var renderer = drawable.GetComponent<Live2D.Cubism.Rendering.CubismRenderer>();
+                        if (renderer != null)
+                        {
+                            var c = renderer.Color;
+                            c.a = original;
+                            renderer.Color = c;
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+
+        public override List<string> GetDrawablesAtScreenPosition(Vector2 screenPos)
+        {
+            var hits = new List<string>();
+            if (cubismModel == null || CachedCamera == null) return hits;
+
+            Ray ray = CachedCamera.ScreenPointToRay(screenPos);
+
+            foreach (var drawable in cubismModel.Drawables)
+            {
+                var meshRenderer = drawable.GetComponent<MeshRenderer>();
+                if (meshRenderer == null || !meshRenderer.enabled) continue;
+
+                if (meshRenderer.bounds.IntersectRay(ray))
+                    hits.Add(drawable.Id);
+            }
+            return hits;
         }
 
         string[] GetMotionNames()
@@ -632,6 +1083,9 @@ namespace NikkeViewerEX.Components
             if (motionController != null)
             {
                 isPlayingTouchMotion = true;
+                if (mouthFormOverride != null)
+                    mouthFormOverride.Paused = true;
+                mouthDebug.PrintValue();
                 motionController.PlayAnimation(clipToPlay, layerIndex: 1, isLoop: false, 
                     priority: Live2D.Cubism.Framework.Motion.CubismMotionPriority.PriorityForce);
             }

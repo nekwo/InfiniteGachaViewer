@@ -230,7 +230,7 @@ namespace NikkeViewerEX.UI
 
         void UpdateBrowserCount()
         {
-            int active = settingsManager.NikkeSettings.NikkeList.Count;
+            int active = settingsManager.NikkeSettings.NikkeList.Count + settingsManager.NikkeSettings.AzurLaneList.Count;
             browserCount.text = $"{browserItems.Count} characters available, {active} active";
             tabActiveBtn.text = $"Active ({active})";
         }

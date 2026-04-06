@@ -27,6 +27,7 @@ namespace NikkeViewerEX.Serialization
     {
         public string Name;
         public List<Nikke> NikkeList = new();
+        public List<AzurLaneCharacter> AzurLaneList = new();
         public string BackgroundImage;
         public float BackgroundScale = 1f;
         public float BackgroundPanX;
@@ -63,6 +64,34 @@ namespace NikkeViewerEX.Serialization
     }
 
     [Serializable]
+    public class ParameterOverride
+    {
+        public string Id;
+        public float Value;
+    }
+
+    [Serializable]
+    public class PhysicsScaleOverride
+    {
+        public string SubRigName;
+        public float Ratio = 1f;
+    }
+
+    [Serializable]
+    public class PartOpacityOverride
+    {
+        public string PartId;
+        public float Opacity;
+    }
+
+    [Serializable]
+    public class DrawableOpacityOverride
+    {
+        public string DrawableId;
+        public float Opacity;
+    }
+
+    [Serializable]
     public class AzurLaneCharacter
     {
         public int InstanceId;
@@ -76,6 +105,10 @@ namespace NikkeViewerEX.Serialization
         public bool HideName = true;
         public float Brightness = 1f;
         public float ShadowBrightness = 0f;
+        public List<ParameterOverride> ParameterOverrides = new();
+        public List<PhysicsScaleOverride> PhysicsScaleOverrides = new();
+        public List<PartOpacityOverride> PartOpacityOverrides = new();
+        public List<DrawableOpacityOverride> DrawableOpacityOverrides = new();
     }
 
     [Serializable]

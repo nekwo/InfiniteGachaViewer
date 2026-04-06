@@ -52,10 +52,11 @@ namespace NikkeViewerEX.Utils
             await UniTask.RunOnThreadPool(() =>
             {
                 // model3.json itself
-                fileCache[model3JsonPath] = File.ReadAllText(model3JsonPath);
+                string normalizedJsonPath = model3JsonPath.Replace('\\', '/');
+                fileCache[normalizedJsonPath] = File.ReadAllText(model3JsonPath);
 
                 // Parse enough to discover referenced paths
-                string json = (string)fileCache[model3JsonPath];
+                string json = (string)fileCache[normalizedJsonPath];
                 var stub = JsonUtility.FromJson<Model3JsonStub>(json);
 
                 if (stub == null) return;
@@ -67,6 +68,14 @@ namespace NikkeViewerEX.Utils
                 // physics3.json
                 if (!string.IsNullOrEmpty(stub.FileReferences?.Physics))
                     CacheText(fileCache, Path.Combine(modelDir, stub.FileReferences.Physics));
+
+                // pose3.json
+                if (!string.IsNullOrEmpty(stub.FileReferences?.Pose))
+                    CacheText(fileCache, Path.Combine(modelDir, stub.FileReferences.Pose));
+
+                // cdi3.json (display info — parameter/part names, combined parameters)
+                if (!string.IsNullOrEmpty(stub.FileReferences?.DisplayInfo))
+                    CacheText(fileCache, Path.Combine(modelDir, stub.FileReferences.DisplayInfo));
 
                 // textures
                 if (stub.FileReferences?.Textures != null)
@@ -95,6 +104,9 @@ namespace NikkeViewerEX.Utils
                 return null;
             }
 
+            // ── Step 2b: Initialize pose parts from pose3.json ───────────────────────
+            InitializePoseParts(model, model3Json);
+
             // ── Step 3: Load motion AnimationClips on thread pool ─────────────────────
             var motionPaths = CollectMotionPaths(model3Json, modelDir);
             var motionTexts = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -108,7 +120,7 @@ namespace NikkeViewerEX.Utils
                 }
             });
 
-            // ── Step 4: Convert motion3.json → AnimationClip on main thread ───────────
+            // ── Step 4: Convert motion3.json → AnimationClip ───────────
             var result = new CubismModelData { Model = model };
 
             foreach (var kvp in motionTexts)
@@ -124,7 +136,6 @@ namespace NikkeViewerEX.Utils
                     if (clip == null) continue;
                     clip.name = motionName;
 
-                    // Strip animation events that have no function name (causes warnings)
     #if UNITY_EDITOR
                     var events = UnityEditor.AnimationUtility.GetAnimationEvents(clip);
                     if (events != null && events.Length > 0)
@@ -133,7 +144,6 @@ namespace NikkeViewerEX.Utils
                     }
     #endif
 
-                    // Store motion JSON for fade data creation later
                     result.MotionJsonStrings[motionName] = kvp.Value;
                     result.AllMotions.Add(clip);
 
@@ -141,7 +151,7 @@ namespace NikkeViewerEX.Utils
                     
                     if (baseName.StartsWith("touch_", StringComparison.OrdinalIgnoreCase))
                         result.TouchMotions.Add(clip);
-                    else if (baseName == "idle" || baseName == "home")
+                    else if (baseName == "idle")
                         result.IdleMotions.Add(clip);
                 }
                 catch (Exception ex)
@@ -153,18 +163,58 @@ namespace NikkeViewerEX.Utils
             return result;
         }
 
+        // ── Pose initialization (mirrors editor-only CubismPoseMotionImporter) ────────
+
+        static void InitializePoseParts(CubismModel model, CubismModel3Json model3Json)
+        {
+            var pose3Json = model3Json.Pose3Json;
+            if (pose3Json?.Groups == null) return;
+
+            var parts = model.Parts;
+            if (parts == null) return;
+
+            for (int groupIndex = 0; groupIndex < pose3Json.Groups.Length; groupIndex++)
+            {
+                var group = pose3Json.Groups[groupIndex];
+                if (group == null) continue;
+
+                for (int partIndex = 0; partIndex < group.Length; partIndex++)
+                {
+                    var part = parts.FindById(group[partIndex].Id);
+                    if (part == null) continue;
+
+                    var posePart = part.gameObject.GetComponent<Live2D.Cubism.Framework.Pose.CubismPosePart>();
+                    if (posePart == null)
+                        posePart = part.gameObject.AddComponent<Live2D.Cubism.Framework.Pose.CubismPosePart>();
+
+                    posePart.GroupIndex = groupIndex;
+                    posePart.PartIndex = partIndex;
+                    posePart.Link = group[partIndex].Link;
+                }
+            }
+
+            // Re-initialize pose controller now that CubismPosePart tags exist
+            var poseController = model.GetComponent<Live2D.Cubism.Framework.Pose.CubismPoseController>();
+            if (poseController != null)
+                poseController.Refresh();
+
+            Debug.Log($"[CubismHelper] Initialized pose parts from pose3.json ({pose3Json.Groups.Length} groups)");
+        }
+
         // ── Helpers ────────────────────────────────────────────────────────────────────
 
         static void CacheBytes(Dictionary<string, object> cache, string path)
         {
-            if (!cache.ContainsKey(path) && File.Exists(path))
-                cache[path] = File.ReadAllBytes(path);
+            string key = path.Replace('\\', '/');
+            if (!cache.ContainsKey(key) && File.Exists(path))
+                cache[key] = File.ReadAllBytes(path);
         }
 
         static void CacheText(Dictionary<string, object> cache, string path)
         {
-            if (!cache.ContainsKey(path) && File.Exists(path))
-                cache[path] = File.ReadAllText(path);
+            string key = path.Replace('\\', '/');
+            if (!cache.ContainsKey(key) && File.Exists(path))
+                cache[key] = File.ReadAllText(path);
         }
 
         static object LoadFromCache(Dictionary<string, object> cache, Type assetType, string path)
@@ -191,6 +241,8 @@ namespace NikkeViewerEX.Utils
                     data = b;
                 else if (File.Exists(path))
                     data = File.ReadAllBytes(path);
+                else
+                    Debug.LogWarning($"[CubismHelper] Texture file not found: {path}");
 
                 if (data == null) return null;
 
@@ -260,6 +312,8 @@ namespace NikkeViewerEX.Utils
             {
                 public string Moc;
                 public string Physics;
+                public string Pose;
+                public string DisplayInfo;
                 public string[] Textures;
             }
         }
